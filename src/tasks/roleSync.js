@@ -1,7 +1,9 @@
 import { getRecentAttendanceCounts, getTournamentCount } from '../database.js';
 
-const REQUIRED_MONTHS = 2; // must have attended at least 1 event in this many months
-const WINDOW = 3;          // number of recent months to look back
+export const REQUIRED_MONTHS = 2; // must have attended at least 1 event in this many months
+export const WINDOW = 3;          // number of recent months to look back
+
+export const qualifiesForRole = (monthCount) => monthCount >= REQUIRED_MONTHS;
 
 /**
  * Assign or remove the attendance role for all registered players based on
@@ -55,7 +57,7 @@ export async function syncAttendanceRoles(guild) {
     const member = memberMap.get(discordId);
     if (!member) continue; // Not in server
 
-    const qualifies = recentCount >= REQUIRED_MONTHS;
+    const qualifies = qualifiesForRole(recentCount);
     const hasRole = member.roles.cache.has(roleId);
 
     try {

@@ -5,6 +5,7 @@ import {
   getRecentMonths,
   getPlayerAttendanceHistory,
 } from '../database.js';
+import { qualifiesForRole, WINDOW } from '../tasks/roleSync.js';
 
 export const data = new SlashCommandBuilder()
   .setName('attendance')
@@ -26,10 +27,10 @@ export async function execute(interaction) {
     return interaction.reply({ content: msg, ephemeral: true });
   }
 
-  const recentMonths = getRecentMonths(3);
-  const countMap = getRecentAttendanceCounts(3);
+  const recentMonths = getRecentMonths(WINDOW);
+  const countMap = getRecentAttendanceCounts(WINDOW);
   const recentCount = countMap.get(target.id) ?? 0;
-  const qualifies = recentCount >= 2;
+  const qualifies = qualifiesForRole(recentCount);
 
   const history = getPlayerAttendanceHistory(registration.player_id, 10);
 

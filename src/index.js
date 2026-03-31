@@ -37,9 +37,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     const payload = { content: 'Something went wrong. Please try again.', ephemeral: true };
     if (interaction.deferred || interaction.replied) {
-      await interaction.editReply(payload).catch(() => {});
+      await interaction.editReply(payload).catch((e) => console.error('Failed to send error reply:', e));
     } else {
-      await interaction.reply(payload).catch(() => {});
+      await interaction.reply(payload).catch((e) => console.error('Failed to send error reply:', e));
     }
   }
 });

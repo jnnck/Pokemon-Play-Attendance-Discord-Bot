@@ -6,7 +6,7 @@ import {
   getRecentAttendanceCounts,
   getRecentMonths,
 } from '../database.js';
-import { syncAttendanceRoles } from '../tasks/roleSync.js';
+import { syncAttendanceRoles, qualifiesForRole, REQUIRED_MONTHS, WINDOW } from '../tasks/roleSync.js';
 
 export const data = new SlashCommandBuilder()
   .setName('register')
@@ -39,15 +39,15 @@ export async function execute(interaction) {
   // Check role eligibility immediately after registering
   await syncAttendanceRoles(interaction.guild);
 
-  const countMap = getRecentAttendanceCounts(3);
+  const countMap = getRecentAttendanceCounts(WINDOW);
   const recentCount = countMap.get(discordId) ?? 0;
-  const recentMonths = getRecentMonths(3);
-  const qualifies = recentCount >= 2;
+  const recentMonths = getRecentMonths(WINDOW);
+  const qualifies = qualifiesForRole(recentCount);
 
   const statusLine =
     recentMonths.length === 0
       ? 'No tournaments have been uploaded yet.'
-      : `You attended events in **${recentCount}** of the last **${recentMonths.length}** month${recentMonths.length !== 1 ? 's' : ''}${qualifies ? ' — you have the attendance role!' : ' — you need at least 1 event in 2 of the last 3 months to earn the attendance role.'}`;
+      : `You attended events in **${recentCount}** of the last **${recentMonths.length}** month${recentMonths.length !== 1 ? 's' : ''}${qualifies ? ' — you have the attendance role!' : ` — you need at least 1 event in ${REQUIRED_MONTHS} of the last ${WINDOW} months to earn the attendance role.`}`;
 
   const action = isUpdate
     ? `Updated your registration from **${existingByDiscord.player_id}** to **${playerId}**.`
