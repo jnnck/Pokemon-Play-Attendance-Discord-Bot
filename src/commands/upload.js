@@ -9,6 +9,7 @@ import {
 } from '../database.js';
 import { syncAttendanceRoles } from '../tasks/roleSync.js';
 import { buildLeaderboardEmbed, buildStandingsEmbeds } from '../embeds.js';
+import { log } from '../logger.js';
 
 export const data = new SlashCommandBuilder()
   .setName('upload')
@@ -87,7 +88,7 @@ export async function execute(interaction) {
       await resultsChannel.send({ embeds: standingsEmbeds });
       await resultsChannel.send({ embeds: [buildLeaderboardEmbed(getTopPlayers(10))] });
     } else {
-      console.warn(`[upload] RESULTS_CHANNEL_ID ${resultsChannelId} not found or not a text channel.`);
+      log.warn(`[upload] RESULTS_CHANNEL_ID ${resultsChannelId} not found or not a text channel.`);
     }
   }
 }

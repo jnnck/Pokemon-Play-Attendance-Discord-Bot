@@ -1,4 +1,5 @@
 import { getRecentAttendanceCounts, getTournamentCount } from '../database.js';
+import { log } from '../logger.js';
 
 export const REQUIRED_MONTHS = 2; // must have attended at least 1 event in this many months
 export const WINDOW = 3;          // number of recent months to look back
@@ -15,13 +16,13 @@ export const qualifiesForRole = (monthCount) => monthCount >= REQUIRED_MONTHS;
 export async function syncAttendanceRoles(guild) {
   const roleId = process.env.ATTENDANCE_ROLE_ID;
   if (!roleId) {
-    console.warn('[roleSync] ATTENDANCE_ROLE_ID not set — skipping role sync.');
+    log.warn('[roleSync] ATTENDANCE_ROLE_ID not set — skipping role sync.');
     return { added: 0, removed: 0 };
   }
 
   const role = guild.roles.cache.get(roleId);
   if (!role) {
-    console.warn(`[roleSync] Role ${roleId} not found in guild — skipping.`);
+    log.warn(`[roleSync] Role ${roleId} not found in guild — skipping.`);
     return { added: 0, removed: 0 };
   }
 
@@ -69,10 +70,10 @@ export async function syncAttendanceRoles(guild) {
         removed.push(discordId);
       }
     } catch (err) {
-      console.error(`[roleSync] Failed to update role for ${discordId}: ${err.message}`);
+      log.error(`[roleSync] Failed to update role for ${discordId}: ${err.message}`);
     }
   }
 
-  console.log(`[roleSync] Done: +${added.length} / -${removed.length} role changes`);
+  log.info(`[roleSync] Done: +${added.length} / -${removed.length} role changes`);
   return { added, removed };
 }

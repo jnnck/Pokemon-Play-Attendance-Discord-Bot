@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
+import { log } from './logger.js';
 
 import * as uploadCommand from './commands/upload.js';
 import * as registerCommand from './commands/register.js';
@@ -12,7 +13,6 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 });
 
-// Register commands in a collection
 client.commands = new Collection();
 
 for (const cmd of [uploadCommand, registerCommand, leaderboardCommand, attendanceCommand, tournamentsCommand, tournamentDeleteCommand]) {
@@ -20,8 +20,8 @@ for (const cmd of [uploadCommand, registerCommand, leaderboardCommand, attendanc
 }
 
 client.once(Events.ClientReady, (c) => {
-  console.log(`Logged in as ${c.user.tag}`);
-  console.log(`Serving ${c.guilds.cache.size} guild(s)`);
+  log.info(`Logged in as ${c.user.tag}`);
+  log.info(`Serving ${c.guilds.cache.size} guild(s)`);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -30,23 +30,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
 
+  const context = `/${interaction.commandName} — ${interaction.user.tag} (${interaction.user.id}) in #${interaction.channel?.name ?? 'unknown'}`;
+
+  log.info(`Command: ${context}`);
+
   try {
     await command.execute(interaction);
+    log.info(`Done:    ${context}`);
   } catch (err) {
-    console.error(`Error executing /${interaction.commandName}:`, err);
+    log.error(`Failed:  ${context}`, err);
 
     const payload = { content: 'Something went wrong. Please try again.', ephemeral: true };
     if (interaction.deferred || interaction.replied) {
-      await interaction.editReply(payload).catch((e) => console.error('Failed to send error reply:', e));
+      await interaction.editReply(payload).catch((e) => log.error('Failed to send error reply:', e));
     } else {
-      await interaction.reply(payload).catch((e) => console.error('Failed to send error reply:', e));
+      await interaction.reply(payload).catch((e) => log.error('Failed to send error reply:', e));
     }
   }
 });
 
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
-  console.error('Missing DISCORD_TOKEN in environment. Copy .env.example to .env and fill in your values.');
+  log.error('Missing DISCORD_TOKEN in environment. Copy .env.example to .env and fill in your values.');
   process.exit(1);
 }
 
