@@ -12,7 +12,8 @@
       "WebFetch(domain:web.archive.org)",
       "WebFetch(domain:tcg.pokemon.com)",
       "Bash(npm install:*)",
-      "Bash(node --input-type=module:*)"
+      "Bash(node --input-type=module:*)",
+      "Bash(npm i:*)"
     ]
   }
 }
