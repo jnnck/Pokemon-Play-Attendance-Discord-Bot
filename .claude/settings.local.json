@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.pokemon.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:forums.pokegym.net)",
+      "WebFetch(domain:www.pokegym.net)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:limitlesstcg.com)",
+      "WebFetch(domain:www.sixprizes.com)",
+      "WebFetch(domain:ptcgtournaments.com)",
+      "WebFetch(domain:web.archive.org)",
+      "WebFetch(domain:tcg.pokemon.com)",
+      "Bash(npm install:*)",
+      "Bash(node --input-type=module:*)"
+    ]
+  }
+}
