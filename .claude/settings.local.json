@@ -13,7 +13,10 @@
       "WebFetch(domain:tcg.pokemon.com)",
       "Bash(npm install:*)",
       "Bash(node --input-type=module:*)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)"
     ]
   }
 }
