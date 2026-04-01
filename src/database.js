@@ -21,7 +21,8 @@ db.exec(`
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     tournament_id INTEGER NOT NULL,
     player_id     TEXT NOT NULL,
-    player_name   TEXT NOT NULL
+    first_name    TEXT NOT NULL,
+    last_name     TEXT NOT NULL DEFAULT ''
   );
 
   CREATE INDEX IF NOT EXISTS idx_attendances_player_id     ON attendances(player_id);
@@ -76,11 +77,11 @@ export function deleteTournament(id) {
 
 export function insertAttendances(tournamentId, players) {
   const stmt = db.prepare(
-    'INSERT INTO attendances (tournament_id, player_id, player_name) VALUES (?, ?, ?)'
+    'INSERT INTO attendances (tournament_id, player_id, first_name, last_name) VALUES (?, ?, ?, ?)'
   );
   const insertMany = db.transaction((rows) => {
-    for (const { player_id, player_name } of rows) {
-      stmt.run(tournamentId, player_id, player_name);
+    for (const { player_id, first_name, last_name } of rows) {
+      stmt.run(tournamentId, player_id, first_name, last_name ?? '');
     }
   });
   insertMany(players);
@@ -98,7 +99,8 @@ export function getTopPlayers(limit = 10) {
   return db
     .prepare(
       `SELECT
-        a.player_name,
+        a.first_name,
+        a.last_name,
         a.player_id,
         pr.discord_id,
         COUNT(DISTINCT a.tournament_id) AS events_attended

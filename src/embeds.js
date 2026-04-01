@@ -3,10 +3,18 @@ import { EmbedBuilder } from 'discord.js';
 const MEDALS = ['🥇', '🥈', '🥉'];
 const CATEGORY_COLORS = { '2': 0xe74c3c, '1': 0x3498db, '0': 0x2ecc71 };
 
+/**
+ * Format a player's name for public display: "Firstname L."
+ */
+export function formatName(first_name, last_name) {
+  return last_name ? `${first_name} ${last_name.charAt(0)}.` : first_name;
+}
+
 export function buildLeaderboardEmbed(players) {
   const lines = players.map((p, i) => {
     const prefix = MEDALS[i] ?? `**${i + 1}.**`;
-    const name = p.discord_id ? `<@${p.discord_id}>` : p.player_name;
+    const short = formatName(p.first_name, p.last_name);
+    const name = p.discord_id ? `${short} (<@${p.discord_id}>)` : short;
     return `${prefix} ${name} — ${p.events_attended} event${p.events_attended !== 1 ? 's' : ''}`;
   });
 
@@ -25,19 +33,20 @@ export function buildStandingsEmbeds(tournamentName, date, standings, discordMap
     .setTimestamp();
 
   const categoryEmbeds = standings.map((pod) => {
-    const formatName = (p) => {
+    const displayName = (p) => {
       const discordId = discordMap.get(p.player_id);
-      return discordId ? `${p.player_name} (<@${discordId}>)` : p.player_name;
+      const short = formatName(p.first_name, p.last_name);
+      return discordId ? `${short} (<@${discordId}>)` : short;
     };
 
     const lines = pod.finished.map((p) => {
       const prefix = MEDALS[p.place - 1] ?? `**${p.place}.**`;
-      return `${prefix} ${formatName(p)}`;
+      return `${prefix} ${displayName(p)}`;
     });
 
     if (pod.dnf.length > 0) {
       lines.push('', '*Did not finish:*');
-      for (const p of pod.dnf) lines.push(`• ${formatName(p)}`);
+      for (const p of pod.dnf) lines.push(`• ${displayName(p)}`);
     }
 
     return new EmbedBuilder()

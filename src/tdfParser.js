@@ -15,12 +15,12 @@ const CATEGORY_NAMES = { '0': 'Juniors', '1': 'Seniors', '2': 'Masters' };
  * @returns {{
  *   name: string,
  *   date: string,
- *   players: Array<{player_id: string, player_name: string}>,
+ *   players: Array<{player_id: string, first_name: string, last_name: string}>,
  *   standings: Array<{
  *     category: string,
  *     label: string,
- *     finished: Array<{place: number, player_id: string, player_name: string}>,
- *     dnf: Array<{player_id: string, player_name: string}>
+ *     finished: Array<{place: number, player_id: string, first_name: string, last_name: string}>,
+ *     dnf: Array<{player_id: string, first_name: string, last_name: string}>
  *   }>
  * }}
  */
@@ -59,10 +59,10 @@ export function parseTDF(fileBuffer) {
     );
   }
 
-  const players = playerIds.map((id) => ({
-    player_id: id,
-    player_name: nameMap.get(id) ?? id,
-  }));
+  const players = playerIds.map((id) => {
+    const { first, last } = nameMap.get(id) ?? { first: id, last: '' };
+    return { player_id: id, first_name: first, last_name: last };
+  });
 
   const standings = extractStandings(root, nameMap);
 
@@ -70,7 +70,7 @@ export function parseTDF(fileBuffer) {
 }
 
 /**
- * Build a Map of userid (string) → "Firstname Lastname" from the <players> section.
+ * Build a Map of userid (string) → { first, last } from the <players> section.
  */
 function buildNameMap(playerNodes) {
   const map = new Map();
@@ -79,8 +79,7 @@ function buildNameMap(playerNodes) {
     if (!id) continue;
     const first = String(p.firstname ?? '').trim();
     const last = String(p.lastname ?? '').trim();
-    const fullName = [first, last].filter(Boolean).join(' ') || id;
-    map.set(id, fullName);
+    map.set(id, { first: first || id, last });
   }
   return map;
 }
@@ -126,11 +125,11 @@ function extractStandings(root, nameMap) {
     const type = String(pod['@_type'] ?? 'finished');
     if (!byCategory.has(cat)) byCategory.set(cat, { finished: [], dnf: [] });
 
-    const players = [].concat(pod.player ?? []).map((p) => ({
-      place: Number(p['@_place'] ?? 0),
-      player_id: String(p['@_id'] ?? '').trim(),
-      player_name: nameMap.get(String(p['@_id'] ?? '').trim()) ?? String(p['@_id'] ?? ''),
-    }));
+    const players = [].concat(pod.player ?? []).map((p) => {
+      const id = String(p['@_id'] ?? '').trim();
+      const { first, last } = nameMap.get(id) ?? { first: id, last: '' };
+      return { place: Number(p['@_place'] ?? 0), player_id: id, first_name: first, last_name: last };
+    });
 
     if (type === 'dnf') {
       byCategory.get(cat).dnf.push(...players);
