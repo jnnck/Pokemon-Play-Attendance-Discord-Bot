@@ -7,6 +7,8 @@ import * as leaderboardCommand from './src/commands/leaderboard.js';
 import * as attendanceCommand from './src/commands/attendance.js';
 import * as tournamentsCommand from './src/commands/tournaments.js';
 import * as tournamentDeleteCommand from './src/commands/tournament-delete.js';
+import * as eventsCommand from './src/commands/events.js';
+import * as eventsClearCommand from './src/commands/events-clear.js';
 
 const commands = [
   uploadCommand,
@@ -15,6 +17,8 @@ const commands = [
   attendanceCommand,
   tournamentsCommand,
   tournamentDeleteCommand,
+  eventsCommand,
+  eventsClearCommand,
 ].map((cmd) => cmd.data.toJSON());
 
 const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;

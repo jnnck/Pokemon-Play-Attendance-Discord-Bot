@@ -6,16 +6,17 @@ export const data = new SlashCommandBuilder()
   .setDescription('List all recorded tournaments');
 
 export async function execute(interaction) {
-  const tournaments = getAllTournaments();
+  const tournaments = await getAllTournaments();
 
   if (tournaments.length === 0) {
     return interaction.reply({ content: 'No tournaments have been uploaded yet.', ephemeral: true });
   }
 
-  const lines = tournaments.map((t) => {
-    const playerCount = getAttendanceCountForTournament(t.id);
-    return `\`#${t.id}\` **${t.name}** — ${t.date} (${playerCount} players)`;
-  });
+  const lines = [];
+  for (const t of tournaments) {
+    const playerCount = await getAttendanceCountForTournament(t.id);
+    lines.push(`\`#${t.id}\` **${t.name}** — ${t.date} (${playerCount} players)`);
+  }
 
   const embed = new EmbedBuilder()
     .setTitle('Recorded Tournaments')

@@ -18,7 +18,7 @@ export async function execute(interaction) {
   const target = interaction.options.getUser('user') ?? interaction.user;
   const isSelf = target.id === interaction.user.id;
 
-  const registration = getRegistrationByDiscordId(target.id);
+  const registration = await getRegistrationByDiscordId(target.id);
 
   if (!registration) {
     const msg = isSelf
@@ -27,12 +27,12 @@ export async function execute(interaction) {
     return interaction.reply({ content: msg, ephemeral: true });
   }
 
-  const recentMonths = getRecentMonths(WINDOW);
-  const countMap = getRecentAttendanceCounts(WINDOW);
+  const recentMonths = await getRecentMonths(WINDOW);
+  const countMap = await getRecentAttendanceCounts(WINDOW);
   const recentCount = countMap.get(target.id) ?? 0;
   const qualifies = qualifiesForRole(recentCount);
 
-  const history = getPlayerAttendanceHistory(registration.player_id, 10);
+  const history = await getPlayerAttendanceHistory(registration.player_id, 10);
 
   const statusEmoji = qualifies ? '✅' : '❌';
   const roleStatus = `${statusEmoji} Active in **${recentCount}/${recentMonths.length}** recent month${recentMonths.length !== 1 ? 's' : ''}${

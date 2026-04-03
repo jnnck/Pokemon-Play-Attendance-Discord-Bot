@@ -7,7 +7,7 @@ export const data = new SlashCommandBuilder()
   .setDescription('Show the all-time top 10 most active tournament players');
 
 export async function execute(interaction) {
-  const top10 = getTopPlayers(10);
+  const top10 = await getTopPlayers(10);
 
   if (top10.length === 0) {
     return interaction.reply({ content: 'No tournament data yet. Upload a TDF file first.', ephemeral: true });

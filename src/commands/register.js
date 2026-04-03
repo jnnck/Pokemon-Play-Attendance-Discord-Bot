@@ -23,7 +23,7 @@ export async function execute(interaction) {
   const discordId = interaction.user.id;
 
   // Check if this player ID is already taken by another Discord user
-  const existingByPlayer = getRegistrationByPlayerId(playerId);
+  const existingByPlayer = await getRegistrationByPlayerId(playerId);
   if (existingByPlayer && existingByPlayer.discord_id !== discordId) {
     return interaction.reply({
       content: `Player ID **${playerId}** is already registered to another Discord account.`,
@@ -31,17 +31,17 @@ export async function execute(interaction) {
     });
   }
 
-  const existingByDiscord = getRegistrationByDiscordId(discordId);
+  const existingByDiscord = await getRegistrationByDiscordId(discordId);
   const isUpdate = !!existingByDiscord;
 
-  upsertRegistration(discordId, playerId);
+  await upsertRegistration(discordId, playerId);
 
   // Check role eligibility immediately after registering
   await syncAttendanceRoles(interaction.guild);
 
-  const countMap = getRecentAttendanceCounts(WINDOW);
+  const countMap = await getRecentAttendanceCounts(WINDOW);
   const recentCount = countMap.get(discordId) ?? 0;
-  const recentMonths = getRecentMonths(WINDOW);
+  const recentMonths = await getRecentMonths(WINDOW);
   const qualifies = qualifiesForRole(recentCount);
 
   const statusLine =

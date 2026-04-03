@@ -44,14 +44,14 @@ export async function execute(interaction) {
     return interaction.editReply({ content: `Could not parse TDF file: ${err.message}` });
   }
 
-  const tournamentId = insertTournament({
+  const tournamentId = await insertTournament({
     name: parsed.name,
     date: parsed.date,
     uploadedBy: interaction.user.id,
   });
 
-  insertAttendances(tournamentId, parsed.players);
-  const playerCount = getAttendanceCountForTournament(tournamentId);
+  await insertAttendances(tournamentId, parsed.players);
+  const playerCount = await getAttendanceCountForTournament(tournamentId);
 
   const syncResult = await syncAttendanceRoles(interaction.guild);
 
@@ -83,10 +83,10 @@ export async function execute(interaction) {
   if (resultsChannelId && parsed.standings.length > 0) {
     const resultsChannel = interaction.guild.channels.cache.get(resultsChannelId);
     if (resultsChannel?.isTextBased()) {
-      const discordMap = getPlayerIdToDiscordIdMap();
+      const discordMap = await getPlayerIdToDiscordIdMap();
       const standingsEmbeds = buildStandingsEmbeds(parsed.name, parsed.date, parsed.standings, discordMap);
       await resultsChannel.send({ embeds: standingsEmbeds });
-      await resultsChannel.send({ embeds: [buildLeaderboardEmbed(getTopPlayers(10))] });
+      await resultsChannel.send({ embeds: [buildLeaderboardEmbed(await getTopPlayers(10))] });
     } else {
       log.warn(`[upload] RESULTS_CHANNEL_ID ${resultsChannelId} not found or not a text channel.`);
     }

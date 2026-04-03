@@ -17,14 +17,14 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction) {
   const id = interaction.options.getInteger('id');
 
-  const tournament = getTournamentById(id);
+  const tournament = await getTournamentById(id);
   if (!tournament) {
     return interaction.reply({ content: `No tournament found with ID \`#${id}\`.`, ephemeral: true });
   }
 
-  const playerCount = getAttendanceCountForTournament(id);
+  const playerCount = await getAttendanceCountForTournament(id);
 
-  deleteTournament(id);
+  await deleteTournament(id);
 
   // Re-sync roles since the last 3 tournaments may have changed
   await syncAttendanceRoles(interaction.guild);

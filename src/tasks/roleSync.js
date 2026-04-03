@@ -27,9 +27,9 @@ export async function syncAttendanceRoles(guild) {
   }
 
   // Need at least 1 tournament on record before syncing roles
-  if (getTournamentCount() === 0) return { added: 0, removed: 0 };
+  if ((await getTournamentCount()) === 0) return { added: 0, removed: 0 };
 
-  const countMap = getRecentAttendanceCounts(WINDOW);
+  const countMap = await getRecentAttendanceCounts(WINDOW);
   if (countMap.size === 0) return { added: 0, removed: 0 };
 
   const discordIds = [...countMap.keys()];
