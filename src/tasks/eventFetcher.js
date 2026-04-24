@@ -1,5 +1,5 @@
 import { EmbedBuilder, GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel } from 'discord.js';
-import { upsertEvent, getUnpostedEvents, markEventPosted, cleanPastEvents } from '../database.js';
+import { upsertEvent, getUnpostedEvents, markEventPosted } from '../database.js';
 import { log } from '../logger.js';
 
 const API_URL = 'https://www.pokedata.ovh/events/tableapi/index_table.php';
@@ -19,6 +19,7 @@ async function fetchAllEvents() {
   const longitude = process.env.POKEMON_EVENT_LON;
   const radius = process.env.POKEMON_EVENT_RADIUS ?? '10';
   const country = process.env.POKEMON_EVENT_COUNTRY ?? 'BE';
+  const shop = process.env.POKEMON_EVENT_SHOP ?? '';
 
   if (!latitude || !longitude) {
     return [];
@@ -37,10 +38,10 @@ async function fetchAllEvents() {
         'user-agent': 'Mozilla/5.0 (compatible)',
       },
       body: JSON.stringify({
-        past: '', country, city: '', shop: '', league: '', states: '[]',
-        postcode: '', cups: '1', challenges: '1', vcups: '1', vchallenges: '1',
-        prereleases: '1', premier: '', go: '1', gocup: '1', mss: '', ftcg: '1',
-        fvg: '1', fgo: '1', latitude, longitude, radius, unit: 'km',
+        past: '1', country, city: '', shop, league: '', states: '[]',
+        postcode: '', cups: '1', challenges: '1', vcups: '', vchallenges: '',
+        prereleases: '1', premier: '', go: '', gocup: '', mss: '', ftcg: '',
+        fvg: '', fgo: '', latitude, longitude, radius, unit: 'km',
         width: 1280, page,
       }),
     });
@@ -56,6 +57,23 @@ async function fetchAllEvents() {
     allEvents.push(...events);
   }
 
+  if (shop) {
+    const needle = shop.toLowerCase();
+    const kept = [];
+    const droppedShops = new Set();
+    for (const e of allEvents) {
+      if ((e.shop ?? '').toLowerCase() === needle) {
+        kept.push(e);
+      } else {
+        droppedShops.add(e.shop ?? '(empty)');
+      }
+    }
+    if (droppedShops.size > 0) {
+      log.info(`[eventFetcher] Filtered out ${allEvents.length - kept.length} event(s); shops seen: ${[...droppedShops].join(', ')}`);
+    }
+    return kept;
+  }
+
   return allEvents;
 }
 
@@ -68,7 +86,7 @@ function toEvent(raw) {
   return {
     guid: raw.guid,
     type: raw.type ?? '',
-    title: raw.name ?? raw.type ?? '',
+    title: raw.name || raw.type || 'Pokémon Event',
     date: raw.date ?? '',
     time: timeMatch?.[0] ?? '',
     store: raw.shop ?? '',
@@ -90,15 +108,19 @@ export async function pollEvents(client) {
   }
 
   try {
-    await cleanPastEvents();
-
     const rawEvents = await fetchAllEvents();
     for (const raw of rawEvents) {
       const event = toEvent(raw);
       if (event.date) await upsertEvent(event);
     }
 
-    const unposted = await getUnpostedEvents();
+    const today = new Date().toISOString().split('T')[0];
+    const shopFilter = (process.env.POKEMON_EVENT_SHOP ?? '').toLowerCase();
+    const unposted = (await getUnpostedEvents()).filter((e) => {
+      if (e.date < today) return false;
+      if (shopFilter && (e.store ?? '').toLowerCase() !== shopFilter) return false;
+      return true;
+    });
     if (unposted.length === 0) return;
 
     const channel = client.channels.cache.get(channelId);
@@ -122,7 +144,7 @@ export async function pollEvents(client) {
       log.info(`[eventFetcher] Posted new event: ${event.title} (${event.date})${discordEventId ? ' (scheduled event created)' : ''}`);
     }
   } catch (err) {
-    log.error('[eventFetcher] Failed to poll events:', err.message);
+    log.error('[eventFetcher] Failed to poll events:', err);
   }
 }
 
@@ -158,7 +180,7 @@ async function createDiscordEvent(guild, event) {
 
     return discordEvent.id;
   } catch (err) {
-    log.error(`[eventFetcher] Failed to create Discord event for "${event.title}":`, err.message);
+    log.error(`[eventFetcher] Failed to create Discord event for "${event.title}":`, err);
     return null;
   }
 }
@@ -181,14 +203,16 @@ function buildEventEmbed(event) {
   const color = EVENT_COLORS[event.type] ?? 0x95a5a6;
 
   const embed = new EmbedBuilder()
-    .setTitle(event.title)
+    .setTitle(event.title || event.type || 'Pokémon Event')
     .setColor(color)
     .addFields(
       { name: 'Date', value: event.date, inline: true },
       { name: 'Time', value: event.time || 'TBD', inline: true },
-      { name: 'Type', value: event.type, inline: true },
     );
 
+  if (event.type) {
+    embed.addFields({ name: 'Type', value: event.type, inline: true });
+  }
   if (event.store) {
     embed.addFields({ name: 'Store', value: event.store, inline: true });
   }
