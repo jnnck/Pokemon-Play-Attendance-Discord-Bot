@@ -119,6 +119,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
+process.on('unhandledRejection', (err) => log.error('Unhandled rejection:', err));
+process.on('uncaughtException', (err) => log.error('Uncaught exception:', err));
+
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
   log.error('Missing DISCORD_TOKEN in environment. Copy .env.example to .env and fill in your values.');
@@ -126,5 +129,12 @@ if (!token) {
 }
 
 await initDatabase();
+log.info('Bot database initialised.');
 await initStacksDb();
-client.login(token);
+log.info('Logging in to Discord…');
+try {
+  await client.login(token);
+} catch (err) {
+  log.error('client.login failed:', err);
+  process.exit(1);
+}
