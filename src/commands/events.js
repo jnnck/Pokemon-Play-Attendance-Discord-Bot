@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from 'discord.js';
 import { getUpcomingEvents } from '../database.js';
 import { M } from '../messages.js';
 
@@ -17,7 +17,7 @@ export async function execute(interaction) {
   const events = await getUpcomingEvents();
 
   if (events.length === 0) {
-    return interaction.reply({ content: M.commands.events.noUpcoming, ephemeral: true });
+    return interaction.reply({ content: M.commands.events.noUpcoming, flags: MessageFlags.Ephemeral });
   }
 
   const lines = events.map((e) => {

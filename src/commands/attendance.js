@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from 'discord.js';
 import {
   getRegistrationByDiscordId,
   getRecentAttendanceCounts,
@@ -25,7 +25,7 @@ export async function execute(interaction) {
     const msg = isSelf
       ? M.commands.attendance.notRegisteredSelf
       : M.commands.attendance.notRegisteredOther(target.id);
-    return interaction.reply({ content: msg, ephemeral: true });
+    return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
   }
 
   const recentMonths = await getRecentMonths(WINDOW);
@@ -55,5 +55,5 @@ export async function execute(interaction) {
     )
     .setTimestamp();
 
-  await interaction.reply({ embeds: [embed], ephemeral: isSelf });
+  await interaction.reply({ embeds: [embed], flags: isSelf ? MessageFlags.Ephemeral : 0 });
 }

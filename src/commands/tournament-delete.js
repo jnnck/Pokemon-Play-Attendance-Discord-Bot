@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } from 'discord.js';
 import { getTournamentById, deleteTournament, getAttendanceCountForTournament } from '../database.js';
 import { syncAttendanceRoles } from '../tasks/roleSync.js';
 import { M } from '../messages.js';
@@ -20,7 +20,7 @@ export async function execute(interaction) {
 
   const tournament = await getTournamentById(id);
   if (!tournament) {
-    return interaction.reply({ content: M.commands.tournamentDelete.notFound(id), ephemeral: true });
+    return interaction.reply({ content: M.commands.tournamentDelete.notFound(id), flags: MessageFlags.Ephemeral });
   }
 
   const playerCount = await getAttendanceCountForTournament(id);

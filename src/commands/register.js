@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import {
   getRegistrationByDiscordId,
   getRegistrationByPlayerId,
@@ -28,7 +28,7 @@ export async function execute(interaction) {
   if (existingByPlayer && existingByPlayer.discord_id !== discordId) {
     return interaction.reply({
       content: M.commands.register.playerIdTaken(playerId),
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 
@@ -56,6 +56,6 @@ export async function execute(interaction) {
 
   await interaction.reply({
     content: `${action}\n\n${statusLine}\n\n*${M.commands.register.hint}*`,
-    ephemeral: true,
+    flags: MessageFlags.Ephemeral,
   });
 }

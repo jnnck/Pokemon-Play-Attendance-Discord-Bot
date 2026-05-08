@@ -26,7 +26,7 @@ export async function execute(interaction) {
   const attachment = interaction.options.getAttachment('file');
 
   if (!attachment.name.toLowerCase().endsWith('.tdf')) {
-    return interaction.editReply({ content: M.commands.upload.wrongFileType, ephemeral: true });
+    return interaction.editReply({ content: M.commands.upload.wrongFileType });
   }
 
   let buffer;

@@ -2,6 +2,7 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  MessageFlags,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -32,7 +33,7 @@ export async function handleSubscribeButton(interaction) {
 
   const event = await getEventById(eventId);
   if (!event) {
-    await interaction.reply({ content: M.subscribe.eventUnavailable, ephemeral: true });
+    await interaction.reply({ content: M.subscribe.eventUnavailable, flags: MessageFlags.Ephemeral });
     return;
   }
 
@@ -49,7 +50,7 @@ export async function handleSubscribeButton(interaction) {
       : M.subscribe.alreadyRegistered(event.name);
     await interaction.reply({
       content: M.subscribe.unregisterPrompt(phrasing),
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
       components: [
         new ActionRowBuilder().addComponents(
           new ButtonBuilder()
@@ -73,7 +74,7 @@ export async function handleSubscribeButton(interaction) {
     content: willWaitlist
       ? M.subscribe.waitlistPrompt(event.name)
       : M.subscribe.confirmPrompt(event.name),
-    ephemeral: true,
+    flags: MessageFlags.Ephemeral,
     components: [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -230,7 +231,7 @@ async function showSignupModal(interaction, eventId) {
  * customId is `stacks-sub-modal:<eventId>`.
  */
 export async function handleSubscribeModal(interaction) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const eventId = Number(interaction.customId.split(':')[1]);
   const discordId = interaction.user.id;

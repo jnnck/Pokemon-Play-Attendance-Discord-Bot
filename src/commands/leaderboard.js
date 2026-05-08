@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 import { getTopPlayers } from '../database.js';
 import { buildLeaderboardEmbed } from '../embeds.js';
 import { M } from '../messages.js';
@@ -11,7 +11,7 @@ export async function execute(interaction) {
   const top10 = await getTopPlayers(10);
 
   if (top10.length === 0) {
-    return interaction.reply({ content: M.commands.leaderboard.noData, ephemeral: true });
+    return interaction.reply({ content: M.commands.leaderboard.noData, flags: MessageFlags.Ephemeral });
   }
 
   await interaction.reply({ embeds: [buildLeaderboardEmbed(top10)] });

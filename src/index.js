@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, Events, MessageFlags } from 'discord.js';
 import { log } from './logger.js';
 import { M } from './messages.js';
 import { initDatabase } from './database.js';
@@ -64,7 +64,7 @@ client.once(Events.ClientReady, (c) => {
 
 async function replyWithError(interaction, err, context) {
   log.error(`Failed:  ${context}`, err);
-  const payload = { content: M.genericError, ephemeral: true };
+  const payload = { content: M.genericError, flags: MessageFlags.Ephemeral };
   if (interaction.deferred || interaction.replied) {
     await interaction.editReply(payload).catch((e) => log.error('Failed to send error reply:', e));
   } else {

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from 'discord.js';
 import { getAllTournaments, getAttendanceCountForTournament } from '../database.js';
 import { M } from '../messages.js';
 
@@ -10,7 +10,7 @@ export async function execute(interaction) {
   const tournaments = await getAllTournaments();
 
   if (tournaments.length === 0) {
-    return interaction.reply({ content: M.commands.tournaments.noTournaments, ephemeral: true });
+    return interaction.reply({ content: M.commands.tournaments.noTournaments, flags: MessageFlags.Ephemeral });
   }
 
   const lines = [];
