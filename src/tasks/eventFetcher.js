@@ -1,29 +1,17 @@
-import { EmbedBuilder, GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel } from 'discord.js';
+import { GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel } from 'discord.js';
 import { upsertEvent, getUnpostedEvents, markEventPosted } from '../database.js';
+import { buildEventEmbed } from '../embeds.js';
+import { config, eventPollingEnabled } from '../config.js';
 import { log } from '../logger.js';
 
 const API_URL = 'https://www.pokedata.ovh/events/tableapi/index_table.php';
-
-const EVENT_COLORS = {
-  'League Challenge': 0xe67e22,
-  'League Cup': 0x9b59b6,
-  'nonpremier TCG': 0x3498db,
-  'Prerelease': 0x2ecc71,
-};
 
 /**
  * Fetch all upcoming events from pokedata.ovh for the configured location.
  */
 async function fetchAllEvents() {
-  const latitude = process.env.POKEMON_EVENT_LAT;
-  const longitude = process.env.POKEMON_EVENT_LON;
-  const radius = process.env.POKEMON_EVENT_RADIUS ?? '10';
-  const country = process.env.POKEMON_EVENT_COUNTRY ?? 'BE';
-  const shop = process.env.POKEMON_EVENT_SHOP ?? '';
-
-  if (!latitude || !longitude) {
-    return [];
-  }
+  const { latitude, longitude, radius, country, shop } = config.events;
+  if (!latitude || !longitude) return [];
 
   const allEvents = [];
 
@@ -100,12 +88,10 @@ function toEvent(raw) {
  * @param {import('discord.js').Client} client
  */
 export async function pollEvents(client) {
-  const channelId = process.env.EVENTS_CHANNEL_ID;
-  if (!channelId) return;
+  if (!eventPollingEnabled()) return;
 
-  if (!process.env.POKEMON_EVENT_LAT || !process.env.POKEMON_EVENT_LON) {
-    return;
-  }
+  const channelId = config.discord.eventsChannelId;
+  const shopFilter = (config.events.shop ?? '').toLowerCase();
 
   try {
     const rawEvents = await fetchAllEvents();
@@ -115,7 +101,6 @@ export async function pollEvents(client) {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    const shopFilter = (process.env.POKEMON_EVENT_SHOP ?? '').toLowerCase();
     const unposted = (await getUnpostedEvents()).filter((e) => {
       if (e.date < today) return false;
       if (shopFilter && (e.store ?? '').toLowerCase() !== shopFilter) return false;
@@ -129,7 +114,7 @@ export async function pollEvents(client) {
       return;
     }
 
-    const guild = client.guilds.cache.get(process.env.GUILD_ID);
+    const guild = config.discord.guildId ? client.guilds.cache.get(config.discord.guildId) : null;
 
     for (const event of unposted) {
       const embed = buildEventEmbed(event);
@@ -187,41 +172,14 @@ async function createDiscordEvent(guild, event) {
 
 /**
  * Parse event date (YYYY-MM-DD) and optional time (HH:MM) into a UTC Date.
- * Treats the input as local time in the configured timezone (default: Europe/Brussels).
+ * Treats the input as local time in the configured timezone.
  */
 function parseEventDate(dateStr, timeStr) {
   if (!dateStr) return null;
-  const tz = process.env.POKEMON_EVENT_TIMEZONE ?? 'Europe/Brussels';
+  const tz = config.events.timezone;
   const time = timeStr || '12:00';
   const naive = new Date(`${dateStr}T${time}:00Z`);
   const inLocal = new Date(naive.toLocaleString('en-US', { timeZone: tz }));
   const inUTC = new Date(naive.toLocaleString('en-US', { timeZone: 'UTC' }));
   return new Date(naive.getTime() - (inLocal - inUTC));
-}
-
-function buildEventEmbed(event) {
-  const color = EVENT_COLORS[event.type] ?? 0x95a5a6;
-
-  const embed = new EmbedBuilder()
-    .setTitle(event.title || event.type || 'Pokémon Event')
-    .setColor(color)
-    .addFields(
-      { name: 'Date', value: event.date, inline: true },
-      { name: 'Time', value: event.time || 'TBD', inline: true },
-    );
-
-  if (event.type) {
-    embed.addFields({ name: 'Type', value: event.type, inline: true });
-  }
-  if (event.store) {
-    embed.addFields({ name: 'Store', value: event.store, inline: true });
-  }
-  if (event.location) {
-    embed.addFields({ name: 'Location', value: event.location, inline: true });
-  }
-  if (event.link) {
-    embed.setURL(event.link);
-  }
-
-  return embed;
 }

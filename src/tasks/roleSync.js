@@ -1,4 +1,5 @@
 import { getRecentAttendanceCounts, getTournamentCount } from '../database.js';
+import { config } from '../config.js';
 import { log } from '../logger.js';
 
 export const REQUIRED_MONTHS = 2; // must have attended at least 1 event in this many months
@@ -14,7 +15,7 @@ export const qualifiesForRole = (monthCount) => monthCount >= REQUIRED_MONTHS;
  * @returns {Promise<{ added: number, removed: number }>}
  */
 export async function syncAttendanceRoles(guild) {
-  const roleId = process.env.ATTENDANCE_ROLE_ID;
+  const roleId = config.discord.attendanceRoleId;
   if (!roleId) {
     log.warn('[roleSync] ATTENDANCE_ROLE_ID not set — skipping role sync.');
     return { added: 0, removed: 0 };

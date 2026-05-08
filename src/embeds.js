@@ -2,6 +2,12 @@ import { EmbedBuilder } from 'discord.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 const CATEGORY_COLORS = { '2': 0xe74c3c, '1': 0x3498db, '0': 0x2ecc71 };
+const EVENT_COLORS = {
+  'League Challenge': 0xe67e22,
+  'League Cup': 0x9b59b6,
+  'nonpremier TCG': 0x3498db,
+  'Prerelease': 0x2ecc71,
+};
 
 /**
  * Format a player's name for public display: "Firstname L."
@@ -56,4 +62,38 @@ export function buildStandingsEmbeds(tournamentName, date, standings, discordMap
   });
 
   return [header, ...categoryEmbeds];
+}
+
+export function buildEventEmbed(event) {
+  const color = EVENT_COLORS[event.type] ?? 0x95a5a6;
+
+  const embed = new EmbedBuilder()
+    .setTitle(event.title || event.type || 'Pokémon Event')
+    .setColor(color)
+    .addFields(
+      { name: 'Date', value: event.date, inline: true },
+      { name: 'Time', value: event.time || 'TBD', inline: true },
+    );
+
+  if (event.type) embed.addFields({ name: 'Type', value: event.type, inline: true });
+  if (event.store) embed.addFields({ name: 'Store', value: event.store, inline: true });
+  if (event.location) embed.addFields({ name: 'Location', value: event.location, inline: true });
+  if (event.link) embed.setURL(event.link);
+
+  return embed;
+}
+
+export function buildUpcomingEventsEmbed(events) {
+  const lines = events.map((e) => {
+    const time = e.time ? ` ${e.time}` : '';
+    const link = e.link ? ` — [details](${e.link})` : '';
+    return `**${e.date}${time}** — ${e.title}${e.store ? ` @ ${e.store}` : ''}${link}`;
+  });
+
+  return new EmbedBuilder()
+    .setTitle('Upcoming Events')
+    .setColor(0x3498db)
+    .setDescription(lines.join('\n'))
+    .setFooter({ text: `${events.length} event${events.length !== 1 ? 's' : ''} found` })
+    .setTimestamp();
 }

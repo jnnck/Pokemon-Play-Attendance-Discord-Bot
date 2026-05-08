@@ -1,38 +1,24 @@
-import 'dotenv/config';
+import { readdir } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join } from 'node:path';
 import { REST, Routes } from 'discord.js';
+import { config, assertDeployConfig } from './src/config.js';
 
-import * as uploadCommand from './src/commands/upload.js';
-import * as registerCommand from './src/commands/register.js';
-import * as leaderboardCommand from './src/commands/leaderboard.js';
-import * as attendanceCommand from './src/commands/attendance.js';
-import * as tournamentsCommand from './src/commands/tournaments.js';
-import * as tournamentDeleteCommand from './src/commands/tournament-delete.js';
-import * as eventsCommand from './src/commands/events.js';
-import * as eventsClearCommand from './src/commands/events-clear.js';
+assertDeployConfig();
 
-const commands = [
-  uploadCommand,
-  registerCommand,
-  leaderboardCommand,
-  attendanceCommand,
-  tournamentsCommand,
-  tournamentDeleteCommand,
-  eventsCommand,
-  eventsClearCommand,
-].map((cmd) => cmd.data.toJSON());
+const commandsDir = join(dirname(fileURLToPath(import.meta.url)), 'src', 'commands');
+const files = (await readdir(commandsDir)).filter((f) => f.endsWith('.js'));
+const modules = await Promise.all(files.map((f) => import(pathToFileURL(join(commandsDir, f)).href)));
+const commands = modules.map((m) => m.data.toJSON());
 
-const { DISCORD_TOKEN, CLIENT_ID, GUILD_ID } = process.env;
-
-if (!DISCORD_TOKEN || !CLIENT_ID || !GUILD_ID) {
-  console.error('Missing DISCORD_TOKEN, CLIENT_ID, or GUILD_ID in .env');
-  process.exit(1);
-}
-
-const rest = new REST().setToken(DISCORD_TOKEN);
+const rest = new REST().setToken(config.discord.token);
 
 try {
-  console.log(`Registering ${commands.length} slash commands to guild ${GUILD_ID}...`);
-  const data = await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
+  console.log(`Registering ${commands.length} slash commands to guild ${config.discord.guildId}...`);
+  const data = await rest.put(
+    Routes.applicationGuildCommands(config.discord.clientId, config.discord.guildId),
+    { body: commands },
+  );
   console.log(`Successfully registered ${data.length} commands.`);
 } catch (err) {
   console.error(err);
