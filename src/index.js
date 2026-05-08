@@ -35,7 +35,8 @@ for (const cmd of [uploadCommand, registerCommand, leaderboardCommand, attendanc
   client.commands.set(cmd.data.name, cmd);
 }
 
-const EVENT_POLL_INTERVAL = 10_000; // 10 seconds
+const POKEDATA_POLL_INTERVAL = 60_000; // 1 minute (external API, be polite)
+const STACKS_POLL_INTERVAL = 10_000;   // 10 seconds (own DB)
 
 client.once(Events.ClientReady, (c) => {
   log.info(`Logged in as ${c.user.tag}`);
@@ -44,19 +45,19 @@ client.once(Events.ClientReady, (c) => {
   // Start event polling
   if (process.env.EVENTS_CHANNEL_ID && process.env.POKEMON_EVENT_LAT) {
     pollEvents(client);
-    setInterval(() => pollEvents(client), EVENT_POLL_INTERVAL);
-    log.info('Event polling started (every 10s)');
+    setInterval(() => pollEvents(client), POKEDATA_POLL_INTERVAL);
+    log.info('Event polling started (every 60s)');
   }
 
   if (process.env.STACKS_SUBSCRIBE_CHANNEL_ID) {
     pollStacksEvents(client);
-    setInterval(() => pollStacksEvents(client), EVENT_POLL_INTERVAL);
+    setInterval(() => pollStacksEvents(client), STACKS_POLL_INTERVAL);
     log.info('Stacks event subscription polling started (every 10s)');
   }
 
   if (process.env.STACKS_RESERVATIONS_CHANNEL_ID) {
     pollReservationNotifications(client);
-    setInterval(() => pollReservationNotifications(client), EVENT_POLL_INTERVAL);
+    setInterval(() => pollReservationNotifications(client), STACKS_POLL_INTERVAL);
     log.info('Reservation notifier polling started (every 10s)');
   }
 });
