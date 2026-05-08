@@ -211,8 +211,8 @@ export async function createReservationForPlayer(eventId, playerId) {
       try {
         const [insert] = await conn.execute(
           `INSERT INTO reservations
-             (event_id, player_id, status, paid, created_at, updated_at)
-           VALUES (?, ?, ?, 0, NOW(), NOW())`,
+             (event_id, player_id, status, source, paid, created_at, updated_at)
+           VALUES (?, ?, ?, 'discord', 0, NOW(), NOW())`,
           [eventId, playerId, status]
         );
         reservationId = insert.insertId;
