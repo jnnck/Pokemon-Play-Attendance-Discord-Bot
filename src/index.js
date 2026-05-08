@@ -15,6 +15,8 @@ import * as tournamentDeleteCommand from './commands/tournament-delete.js';
 import * as eventsCommand from './commands/events.js';
 import * as eventsClearCommand from './commands/events-clear.js';
 
+import { handleSubscribeButton } from './handlers/stacksSubscribe.js';
+
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildScheduledEvents],
 });
@@ -45,28 +47,57 @@ client.once(Events.ClientReady, (c) => {
   }
 });
 
+async function replyWithError(interaction, err, context) {
+  log.error(`Failed:  ${context}`, err);
+  const payload = { content: 'Something went wrong. Please try again.', ephemeral: true };
+  if (interaction.deferred || interaction.replied) {
+    await interaction.editReply(payload).catch((e) => log.error('Failed to send error reply:', e));
+  } else {
+    await interaction.reply(payload).catch((e) => log.error('Failed to send error reply:', e));
+  }
+}
+
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
 
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
+    const context = `/${interaction.commandName} — ${interaction.user.tag} (${interaction.user.id}) in #${interaction.channel?.name ?? 'unknown'}`;
+    log.info(`Command: ${context}`);
 
-  const context = `/${interaction.commandName} — ${interaction.user.tag} (${interaction.user.id}) in #${interaction.channel?.name ?? 'unknown'}`;
-
-  log.info(`Command: ${context}`);
-
-  try {
-    await command.execute(interaction);
-    log.info(`Done:    ${context}`);
-  } catch (err) {
-    log.error(`Failed:  ${context}`, err);
-
-    const payload = { content: 'Something went wrong. Please try again.', ephemeral: true };
-    if (interaction.deferred || interaction.replied) {
-      await interaction.editReply(payload).catch((e) => log.error('Failed to send error reply:', e));
-    } else {
-      await interaction.reply(payload).catch((e) => log.error('Failed to send error reply:', e));
+    try {
+      await command.execute(interaction);
+      log.info(`Done:    ${context}`);
+    } catch (err) {
+      await replyWithError(interaction, err, context);
     }
+    return;
+  }
+
+  if (interaction.isButton()) {
+    const context = `button:${interaction.customId} — ${interaction.user.tag}`;
+    try {
+      if (interaction.customId.startsWith('stacks-sub:')
+        || interaction.customId.startsWith('stacks-sub-confirm:')
+        || interaction.customId === 'stacks-sub-cancel') {
+        await handleSubscribeButton(interaction);
+      }
+    } catch (err) {
+      await replyWithError(interaction, err, context);
+    }
+    return;
+  }
+
+  if (interaction.isModalSubmit()) {
+    const context = `modal:${interaction.customId} — ${interaction.user.tag}`;
+    try {
+      if (interaction.customId.startsWith('stacks-sub-modal:')) {
+        await handleSubscribeButton(interaction);
+      }
+    } catch (err) {
+      await replyWithError(interaction, err, context);
+    }
+    return;
   }
 });
 
