@@ -15,7 +15,12 @@ import * as tournamentDeleteCommand from './commands/tournament-delete.js';
 import * as eventsCommand from './commands/events.js';
 import * as eventsClearCommand from './commands/events-clear.js';
 
-import { handleSubscribeButton, handleSubscribeConfirm, handleSubscribeCancel } from './handlers/stacksSubscribe.js';
+import {
+  handleSubscribeButton,
+  handleSubscribeConfirm,
+  handleSubscribeCancel,
+  handleSubscribeModal,
+} from './handlers/stacksSubscribe.js';
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildScheduledEvents],
@@ -94,7 +99,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const context = `modal:${interaction.customId} — ${interaction.user.tag}`;
     try {
       if (interaction.customId.startsWith('stacks-sub-modal:')) {
-        await handleSubscribeButton(interaction);
+        await handleSubscribeModal(interaction);
       }
     } catch (err) {
       await replyWithError(interaction, err, context);
