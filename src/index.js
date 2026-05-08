@@ -4,6 +4,7 @@ import { log } from './logger.js';
 import { initDatabase } from './database.js';
 import { initStacksDb } from './stacksDb.js';
 import { pollEvents } from './tasks/eventFetcher.js';
+import { pollStacksEvents } from './tasks/stacksEventPoller.js';
 
 import * as uploadCommand from './commands/upload.js';
 import * as registerCommand from './commands/register.js';
@@ -35,6 +36,12 @@ client.once(Events.ClientReady, (c) => {
     pollEvents(client);
     setInterval(() => pollEvents(client), EVENT_POLL_INTERVAL);
     log.info('Event polling started (every 60s)');
+  }
+
+  if (process.env.STACKS_SUBSCRIBE_CHANNEL_ID) {
+    pollStacksEvents(client);
+    setInterval(() => pollStacksEvents(client), EVENT_POLL_INTERVAL);
+    log.info('Stacks event subscription polling started (every 60s)');
   }
 });
 

@@ -1,4 +1,4 @@
-import { EmbedBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 const CATEGORY_COLORS = { '2': 0xe74c3c, '1': 0x3498db, '0': 0x2ecc71 };
@@ -56,4 +56,38 @@ export function buildStandingsEmbeds(tournamentName, date, standings, discordMap
   });
 
   return [header, ...categoryEmbeds];
+}
+
+/**
+ * Format a date_time string from MariaDB (e.g. "2026-05-15 19:00:00")
+ * as a Discord timestamp using the long-date-with-time style.
+ */
+function formatEventDateTime(dateTimeStr) {
+  const ts = Math.floor(new Date(dateTimeStr.replace(' ', 'T')).getTime() / 1000);
+  return `<t:${ts}:F>`;
+}
+
+export function buildSubscribeEmbed(event) {
+  const embed = new EmbedBuilder()
+    .setTitle(event.name)
+    .setColor(0x5865f2)
+    .addFields({ name: 'When', value: formatEventDateTime(event.date_time), inline: false });
+
+  const price = Number(event.price);
+  if (price > 0) {
+    embed.addFields({ name: 'Price', value: `€${price.toFixed(2)}`, inline: true });
+  }
+  embed.addFields({ name: 'Spots', value: String(event.max_spots), inline: true });
+  embed.setFooter({ text: 'Click below to reserve your spot.' });
+
+  return embed;
+}
+
+export function buildSubscribeRow(eventId) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`stacks-sub:${eventId}`)
+      .setLabel('Subscribe')
+      .setStyle(ButtonStyle.Primary)
+  );
 }
