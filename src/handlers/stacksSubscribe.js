@@ -109,7 +109,7 @@ export async function handleSubscribeConfirm(interaction) {
   const result = await createReservationForPlayer(eventId, player.id);
   await interaction.update({
     content: replyForResult(result, event.name),
-    components: [],
+    components: hasActiveAfter(result) ? [buildUnregisterRow(eventId)] : [],
   });
   log.info(`[stacksSubscribe] Reservation ${result.status} for event ${eventId}, player ${player.id}`);
 }
@@ -152,6 +152,19 @@ export async function handleSubscribeUnregister(interaction) {
     components: [],
   });
   log.info(`[stacksSubscribe] Unregister for event ${eventId}, player ${player.id} (cancelled=${cancelled})`);
+}
+
+function hasActiveAfter(result) {
+  return result.status === 'confirmed' || result.status === 'waitlist' || result.status === 'duplicate';
+}
+
+function buildUnregisterRow(eventId) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`stacks-sub-unregister:${eventId}`)
+      .setLabel(M.buttons.unregister)
+      .setStyle(ButtonStyle.Danger),
+  );
 }
 
 function replyForResult(result, eventName) {
@@ -251,6 +264,7 @@ export async function handleSubscribeModal(interaction) {
   await interaction.reply({
     content: replyForResult(result, event.name),
     ephemeral: true,
+    components: hasActiveAfter(result) ? [buildUnregisterRow(eventId)] : [],
   });
   log.info(`[stacksSubscribe] First-time signup: created player ${newPlayerId}, reservation ${result.status}`);
 }
