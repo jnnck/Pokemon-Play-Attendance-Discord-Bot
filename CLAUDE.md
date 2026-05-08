@@ -23,12 +23,13 @@ This is a Node.js ESM (`"type": "module"`) Discord bot using discord.js v14 and 
 
 **Request flow:** `src/index.js` receives every slash command interaction and dispatches to the matching handler in `src/commands/`. Each handler is a module that exports `data` (a `SlashCommandBuilder`) and `execute(interaction)`.
 
-**Adding a new command** requires three steps: create the file in `src/commands/`, import and register it in both `src/index.js` and `deploy-commands.js`, then run `npm run deploy`.
+**Adding a new command:** drop a `*.js` file in `src/commands/` exporting `data` and `execute`, then run `npm run deploy`. Both `src/index.js` and `deploy-commands.js` auto-discover every file in that directory — no manual registration step.
 
 **Key modules:**
+- `src/config.js` — single source for all environment variables. Other modules import `config` from here instead of reading `process.env` directly. Loads `dotenv/config` once at module load.
 - `src/database.js` — MariaDB connection pool (async via mysql2/promise), all schema creation, and every query function. `initDatabase()` must be called (and awaited) before the bot starts. All database functions are async and must be awaited.
 - `src/tdfParser.js` — parses TDF files (XML format from Pokemon Tournament Manager). Returns `{ name, date, players, standings }`. Players are stored with separate `first_name`/`last_name` fields.
-- `src/embeds.js` — all Discord embed builders live here. `formatName(first, last)` applies the privacy shortening (`"Firstname L."`). All display of player names must go through this function.
+- `src/embeds.js` — all Discord embed builders live here, including event embeds (`buildEventEmbed`, `buildUpcomingEventsEmbed`). `formatName(first, last)` applies the privacy shortening (`"Firstname L."`). All display of player names must go through this function.
 - `src/tasks/roleSync.js` — exports `REQUIRED_MONTHS`, `WINDOW`, and `qualifiesForRole()`. These constants are the single source of truth for role eligibility logic and are imported by the commands that need to display eligibility status.
 - `src/logger.js` — thin wrapper around `console.*` that adds ISO timestamps. Use `log.info/warn/error` everywhere instead of `console.*`.
 

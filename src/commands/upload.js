@@ -9,6 +9,7 @@ import {
 } from '../database.js';
 import { syncAttendanceRoles } from '../tasks/roleSync.js';
 import { buildLeaderboardEmbed, buildStandingsEmbeds } from '../embeds.js';
+import { config } from '../config.js';
 import { log } from '../logger.js';
 
 export const data = new SlashCommandBuilder()
@@ -79,7 +80,7 @@ export async function execute(interaction) {
 
   await interaction.editReply({ embeds: [confirmEmbed] });
 
-  const resultsChannelId = process.env.RESULTS_CHANNEL_ID;
+  const resultsChannelId = config.discord.resultsChannelId;
   if (resultsChannelId && parsed.standings.length > 0) {
     const resultsChannel = interaction.guild.channels.cache.get(resultsChannelId);
     if (resultsChannel?.isTextBased()) {
