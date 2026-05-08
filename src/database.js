@@ -57,6 +57,14 @@ export async function initDatabase() {
       discord_event_id  VARCHAR(64)
     )
   `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS stacks_event_messages (
+      event_id   INT PRIMARY KEY,
+      channel_id VARCHAR(64) NOT NULL,
+      message_id VARCHAR(64) NOT NULL
+    )
+  `);
 }
 
 // --- Tournaments ---
@@ -297,4 +305,26 @@ export async function cleanPastEvents() {
 export async function clearAllEvents() {
   const [result] = await pool.execute('DELETE FROM events');
   return result.affectedRows;
+}
+
+// --- Stacks event message tracking ---
+
+export async function upsertStacksEventMessage(eventId, channelId, messageId) {
+  await pool.execute(
+    `INSERT INTO stacks_event_messages (event_id, channel_id, message_id)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE channel_id = VALUES(channel_id), message_id = VALUES(message_id)`,
+    [eventId, channelId, messageId]
+  );
+}
+
+export async function getStacksEventMessages() {
+  const [rows] = await pool.execute(
+    'SELECT event_id, channel_id, message_id FROM stacks_event_messages'
+  );
+  return rows;
+}
+
+export async function deleteStacksEventMessage(eventId) {
+  await pool.execute('DELETE FROM stacks_event_messages WHERE event_id = ?', [eventId]);
 }

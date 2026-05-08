@@ -67,7 +67,7 @@ function formatEventDateTime(dateTimeStr) {
   return `<t:${ts}:F>`;
 }
 
-export function buildSubscribeEmbed(event) {
+export function buildSubscribeEmbed(event, availableSpots) {
   const embed = new EmbedBuilder()
     .setTitle(event.name)
     .setColor(0x5865f2)
@@ -77,7 +77,7 @@ export function buildSubscribeEmbed(event) {
   if (price > 0) {
     embed.addFields({ name: 'Price', value: `€${price.toFixed(2)}`, inline: true });
   }
-  embed.addFields({ name: 'Spots', value: String(event.max_spots), inline: true });
+  embed.addFields({ name: 'Spots', value: `${availableSpots} of ${event.max_spots} available`, inline: true });
   embed.setFooter({ text: 'Click below to reserve your spot.' });
 
   return embed;

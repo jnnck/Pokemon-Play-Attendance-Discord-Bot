@@ -65,6 +65,33 @@ export async function getEventById(eventId) {
   return rows[0] ?? null;
 }
 
+export async function getActiveReservationCount(eventId) {
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS active_count
+     FROM reservations
+     WHERE event_id = ? AND status IN ('unconfirmed', 'confirmed')`,
+    [eventId]
+  );
+  return Number(rows[0].active_count);
+}
+
+/**
+ * Events that are still open for registration, posted, upcoming,
+ * and not soft-deleted. Used to refresh the live spot count.
+ */
+export async function getOpenPostedUpcomingEvents() {
+  const [rows] = await pool.execute(
+    `SELECT id, name, slug, date_time, price, max_spots
+     FROM events
+     WHERE registrations_open = 1
+       AND posted_to_discord = 1
+       AND deleted_at IS NULL
+       AND date_time > NOW()
+     ORDER BY date_time ASC`
+  );
+  return rows;
+}
+
 // --- Players ---
 
 export async function getPlayerByDiscordId(discordId) {
