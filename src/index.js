@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
 import { log } from './logger.js';
 import { initDatabase } from './database.js';
+import { initStacksDb } from './stacksDb.js';
 import { pollEvents } from './tasks/eventFetcher.js';
 
 import * as uploadCommand from './commands/upload.js';
@@ -69,4 +70,5 @@ if (!token) {
 }
 
 await initDatabase();
+await initStacksDb();
 client.login(token);
