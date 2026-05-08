@@ -1,28 +1,29 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getAllTournaments, getAttendanceCountForTournament } from '../database.js';
+import { M } from '../messages.js';
 
 export const data = new SlashCommandBuilder()
   .setName('tournaments')
-  .setDescription('List all recorded tournaments');
+  .setDescription(M.commands.tournaments.description);
 
 export async function execute(interaction) {
   const tournaments = await getAllTournaments();
 
   if (tournaments.length === 0) {
-    return interaction.reply({ content: 'No tournaments have been uploaded yet.', ephemeral: true });
+    return interaction.reply({ content: M.commands.tournaments.noTournaments, ephemeral: true });
   }
 
   const lines = [];
   for (const t of tournaments) {
     const playerCount = await getAttendanceCountForTournament(t.id);
-    lines.push(`\`#${t.id}\` **${t.name}** — ${t.date} (${playerCount} players)`);
+    lines.push(M.commands.tournaments.line(t.id, t.name, t.date, playerCount));
   }
 
   const embed = new EmbedBuilder()
-    .setTitle('Recorded Tournaments')
+    .setTitle(M.commands.tournaments.embedTitle)
     .setColor(0x3498db)
     .setDescription(lines.join('\n'))
-    .setFooter({ text: `${tournaments.length} tournament${tournaments.length !== 1 ? 's' : ''} total` });
+    .setFooter({ text: M.commands.tournaments.footer(tournaments.length) });
 
   await interaction.reply({ embeds: [embed] });
 }

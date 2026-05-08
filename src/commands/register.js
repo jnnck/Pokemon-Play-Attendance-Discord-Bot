@@ -7,14 +7,15 @@ import {
   getRecentMonths,
 } from '../database.js';
 import { syncAttendanceRoles, qualifiesForRole, REQUIRED_MONTHS, WINDOW } from '../tasks/roleSync.js';
+import { M } from '../messages.js';
 
 export const data = new SlashCommandBuilder()
   .setName('register')
-  .setDescription('Link your Discord account to your Pokemon TCG player ID')
+  .setDescription(M.commands.register.description)
   .addStringOption((opt) =>
     opt
       .setName('player_id')
-      .setDescription('Your player ID as it appears in TDF tournament files')
+      .setDescription(M.commands.register.playerIdOptionDescription)
       .setRequired(true)
   );
 
@@ -26,7 +27,7 @@ export async function execute(interaction) {
   const existingByPlayer = await getRegistrationByPlayerId(playerId);
   if (existingByPlayer && existingByPlayer.discord_id !== discordId) {
     return interaction.reply({
-      content: `Player ID **${playerId}** is already registered to another Discord account.`,
+      content: M.commands.register.playerIdTaken(playerId),
       ephemeral: true,
     });
   }
@@ -46,15 +47,15 @@ export async function execute(interaction) {
 
   const statusLine =
     recentMonths.length === 0
-      ? 'No tournaments have been uploaded yet.'
-      : `You attended events in **${recentCount}** of the last **${recentMonths.length}** month${recentMonths.length !== 1 ? 's' : ''}${qualifies ? ' — you have the attendance role!' : ` — you need at least 1 event in ${REQUIRED_MONTHS} of the last ${WINDOW} months to earn the attendance role.`}`;
+      ? M.commands.register.noTournaments
+      : M.commands.register.statusLine(recentCount, recentMonths.length, qualifies, REQUIRED_MONTHS, WINDOW);
 
   const action = isUpdate
-    ? `Updated your registration from **${existingByDiscord.player_id}** to **${playerId}**.`
-    : `Registered player ID **${playerId}** to your account.`;
+    ? M.commands.register.updated(existingByDiscord.player_id, playerId)
+    : M.commands.register.registered(playerId);
 
   await interaction.reply({
-    content: `${action}\n\n${statusLine}\n\n*Your player ID can be found in official tournament result exports.*`,
+    content: `${action}\n\n${statusLine}\n\n*${M.commands.register.hint}*`,
     ephemeral: true,
   });
 }

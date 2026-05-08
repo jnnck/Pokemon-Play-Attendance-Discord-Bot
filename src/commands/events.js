@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { getUpcomingEvents } from '../database.js';
+import { M } from '../messages.js';
 
 const EVENT_COLORS = {
   'League Challenge': 0xe67e22,
@@ -10,26 +11,26 @@ const EVENT_COLORS = {
 
 export const data = new SlashCommandBuilder()
   .setName('events')
-  .setDescription('Show upcoming Pokemon TCG events near us');
+  .setDescription(M.commands.events.description);
 
 export async function execute(interaction) {
   const events = await getUpcomingEvents();
 
   if (events.length === 0) {
-    return interaction.reply({ content: 'No upcoming events found.', ephemeral: true });
+    return interaction.reply({ content: M.commands.events.noUpcoming, ephemeral: true });
   }
 
   const lines = events.map((e) => {
     const time = e.time ? ` ${e.time}` : '';
     const link = e.link ? ` — [details](${e.link})` : '';
-    return `**${e.date}${time}** — ${e.title}${e.store ? ` @ ${e.store}` : ''}${link}`;
+    return M.commands.events.line(e.date, time, e.title, e.store, link);
   });
 
   const embed = new EmbedBuilder()
-    .setTitle('Upcoming Events')
+    .setTitle(M.commands.events.embedTitle)
     .setColor(0x3498db)
     .setDescription(lines.join('\n'))
-    .setFooter({ text: `${events.length} event${events.length !== 1 ? 's' : ''} found` })
+    .setFooter({ text: M.commands.events.footer(events.length) })
     .setTimestamp();
 
   await interaction.reply({ embeds: [embed] });

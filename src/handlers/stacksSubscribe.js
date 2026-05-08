@@ -16,6 +16,7 @@ import {
   cancelActiveReservation,
 } from '../stacksDb.js';
 import { log } from '../logger.js';
+import { M } from '../messages.js';
 
 /**
  * Handle the initial "Subscribe" button click on a public event post.
@@ -30,7 +31,7 @@ export async function handleSubscribeButton(interaction) {
 
   const event = await getEventById(eventId);
   if (!event) {
-    await interaction.reply({ content: 'This event is no longer available.', ephemeral: true });
+    await interaction.reply({ content: M.subscribe.eventUnavailable, ephemeral: true });
     return;
   }
 
@@ -43,20 +44,20 @@ export async function handleSubscribeButton(interaction) {
   const existing = await getActiveReservation(eventId, player.id);
   if (existing) {
     const phrasing = existing.status === 'waitlist'
-      ? `You're on the waitlist for **${event.name}**.`
-      : `You're registered for **${event.name}**.`;
+      ? M.subscribe.alreadyOnWaitlist(event.name)
+      : M.subscribe.alreadyRegistered(event.name);
     await interaction.reply({
-      content: `${phrasing} Want to unregister?`,
+      content: M.subscribe.unregisterPrompt(phrasing),
       ephemeral: true,
       components: [
         new ActionRowBuilder().addComponents(
           new ButtonBuilder()
             .setCustomId(`stacks-sub-unregister:${eventId}`)
-            .setLabel('Unregister')
+            .setLabel(M.buttons.unregister)
             .setStyle(ButtonStyle.Danger),
           new ButtonBuilder()
             .setCustomId('stacks-sub-cancel')
-            .setLabel('Close')
+            .setLabel(M.buttons.close)
             .setStyle(ButtonStyle.Secondary),
         ),
       ],
@@ -65,17 +66,17 @@ export async function handleSubscribeButton(interaction) {
   }
 
   await interaction.reply({
-    content: `Reserve a spot for **${event.name}**?`,
+    content: M.subscribe.confirmPrompt(event.name),
     ephemeral: true,
     components: [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId(`stacks-sub-confirm:${eventId}`)
-          .setLabel('Confirm')
+          .setLabel(M.buttons.confirm)
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId('stacks-sub-cancel')
-          .setLabel('Cancel')
+          .setLabel(M.buttons.cancel)
           .setStyle(ButtonStyle.Secondary),
         ),
       ],
@@ -93,7 +94,7 @@ export async function handleSubscribeConfirm(interaction) {
   const player = await getPlayerByDiscordId(discordId);
   if (!player) {
     await interaction.update({
-      content: 'Your player profile is missing. Click Subscribe again to register.',
+      content: M.subscribe.profileMissingFull,
       components: [],
     });
     return;
@@ -101,7 +102,7 @@ export async function handleSubscribeConfirm(interaction) {
 
   const event = await getEventById(eventId);
   if (!event) {
-    await interaction.update({ content: 'This event is no longer available.', components: [] });
+    await interaction.update({ content: M.subscribe.eventUnavailable, components: [] });
     return;
   }
 
@@ -117,7 +118,7 @@ export async function handleSubscribeConfirm(interaction) {
  * Handle the "Cancel" click in the ephemeral.
  */
 export async function handleSubscribeCancel(interaction) {
-  await interaction.update({ content: 'No changes made.', components: [] });
+  await interaction.update({ content: M.subscribe.noChanges, components: [] });
 }
 
 /**
@@ -131,7 +132,7 @@ export async function handleSubscribeUnregister(interaction) {
   const player = await getPlayerByDiscordId(discordId);
   if (!player) {
     await interaction.update({
-      content: 'Your player profile is missing.',
+      content: M.subscribe.profileMissingShort,
       components: [],
     });
     return;
@@ -139,15 +140,15 @@ export async function handleSubscribeUnregister(interaction) {
 
   const event = await getEventById(eventId);
   if (!event) {
-    await interaction.update({ content: 'This event is no longer available.', components: [] });
+    await interaction.update({ content: M.subscribe.eventUnavailable, components: [] });
     return;
   }
 
   const cancelled = await cancelActiveReservation(eventId, player.id);
   await interaction.update({
     content: cancelled
-      ? `Your registration for **${event.name}** has been cancelled. Click Register again if your plans change.`
-      : `You don't have an active registration for **${event.name}**.`,
+      ? M.subscribe.cancelled(event.name)
+      : M.subscribe.noActiveReservation(event.name),
     components: [],
   });
   log.info(`[stacksSubscribe] Unregister for event ${eventId}, player ${player.id} (cancelled=${cancelled})`);
@@ -156,38 +157,38 @@ export async function handleSubscribeUnregister(interaction) {
 function replyForResult(result, eventName) {
   switch (result.status) {
     case 'confirmed':
-      return `You're confirmed for **${eventName}**. See you there!`;
+      return M.subscribe.confirmed(eventName);
     case 'waitlist':
-      return `**${eventName}** is currently full — you've been added to the waitlist. We'll be in touch if a spot opens up.`;
+      return M.subscribe.waitlist(eventName);
     case 'duplicate':
-      return `You already have an active reservation for **${eventName}**.`;
+      return M.subscribe.duplicate(eventName);
     default:
-      return `Reservation status: ${result.status}.`;
+      return M.subscribe.statusFallback(result.status);
   }
 }
 
 async function showSignupModal(interaction, eventId) {
   const modal = new ModalBuilder()
     .setCustomId(`stacks-sub-modal:${eventId}`)
-    .setTitle('First-time signup');
+    .setTitle(M.modal.title);
 
   const firstName = new TextInputBuilder()
     .setCustomId('first_name')
-    .setLabel('First name')
+    .setLabel(M.modal.firstName)
     .setStyle(TextInputStyle.Short)
     .setRequired(true)
     .setMaxLength(100);
 
   const lastName = new TextInputBuilder()
     .setCustomId('last_name')
-    .setLabel('Last name')
+    .setLabel(M.modal.lastName)
     .setStyle(TextInputStyle.Short)
     .setRequired(true)
     .setMaxLength(100);
 
   const playerId = new TextInputBuilder()
     .setCustomId('player_id')
-    .setLabel('Pokemon player ID')
+    .setLabel(M.modal.playerId)
     .setStyle(TextInputStyle.Short)
     .setRequired(true)
     .setMaxLength(64);
@@ -214,7 +215,7 @@ export async function handleSubscribeModal(interaction) {
 
   const event = await getEventById(eventId);
   if (!event) {
-    await interaction.reply({ content: 'This event is no longer available.', ephemeral: true });
+    await interaction.reply({ content: M.subscribe.eventUnavailable, ephemeral: true });
     return;
   }
 
@@ -222,7 +223,7 @@ export async function handleSubscribeModal(interaction) {
   const existingByPlayerId = await getPlayerByPlayerId(playerId);
   if (existingByPlayerId && existingByPlayerId.discord_id !== discordId) {
     await interaction.reply({
-      content: `Player ID **${playerId}** is registered to another Discord account. Contact an admin if this is a mistake.`,
+      content: M.subscribe.playerIdTakenByOther(playerId),
       ephemeral: true,
     });
     return;
@@ -232,7 +233,7 @@ export async function handleSubscribeModal(interaction) {
   const existingByDiscord = await getPlayerByDiscordId(discordId);
   if (existingByDiscord) {
     await interaction.reply({
-      content: 'Your account is already linked. Click Subscribe again.',
+      content: M.subscribe.accountAlreadyLinked,
       ephemeral: true,
     });
     return;

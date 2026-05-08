@@ -1,6 +1,7 @@
 import { EmbedBuilder, GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel } from 'discord.js';
 import { upsertEvent, getUnpostedEvents, markEventPosted } from '../database.js';
 import { log } from '../logger.js';
+import { M } from '../messages.js';
 
 const API_URL = 'https://www.pokedata.ovh/events/tableapi/index_table.php';
 
@@ -161,11 +162,11 @@ async function createDiscordEvent(guild, event) {
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + 3 * 60 * 60 * 1000);
 
     const locationParts = [event.store, event.location].filter(Boolean);
-    const entityMetadataLocation = locationParts.join(', ') || 'TBD';
+    const entityMetadataLocation = locationParts.join(', ') || M.pokedataEmbed.locationTBD;
 
     const description = [
-      event.type ? `Type: ${event.type}` : '',
-      event.link ? `Details: ${event.link}` : '',
+      event.type ? M.pokedataEmbed.eventTypeLine(event.type) : '',
+      event.link ? M.pokedataEmbed.eventDetailsLine(event.link) : '',
     ].filter(Boolean).join('\n');
 
     const discordEvent = await guild.scheduledEvents.create({
@@ -203,21 +204,21 @@ function buildEventEmbed(event) {
   const color = EVENT_COLORS[event.type] ?? 0x95a5a6;
 
   const embed = new EmbedBuilder()
-    .setTitle(event.title || event.type || 'Pokémon Event')
+    .setTitle(event.title || event.type || M.pokedataEmbed.fallbackTitle)
     .setColor(color)
     .addFields(
-      { name: 'Date', value: event.date, inline: true },
-      { name: 'Time', value: event.time || 'TBD', inline: true },
+      { name: M.pokedataEmbed.fieldDate, value: event.date, inline: true },
+      { name: M.pokedataEmbed.fieldTime, value: event.time || M.pokedataEmbed.timeTBD, inline: true },
     );
 
   if (event.type) {
-    embed.addFields({ name: 'Type', value: event.type, inline: true });
+    embed.addFields({ name: M.pokedataEmbed.fieldType, value: event.type, inline: true });
   }
   if (event.store) {
-    embed.addFields({ name: 'Store', value: event.store, inline: true });
+    embed.addFields({ name: M.pokedataEmbed.fieldStore, value: event.store, inline: true });
   }
   if (event.location) {
-    embed.addFields({ name: 'Location', value: event.location, inline: true });
+    embed.addFields({ name: M.pokedataEmbed.fieldLocation, value: event.location, inline: true });
   }
   if (event.link) {
     embed.setURL(event.link);

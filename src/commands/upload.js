@@ -10,12 +10,13 @@ import {
 import { syncAttendanceRoles } from '../tasks/roleSync.js';
 import { buildLeaderboardEmbed, buildStandingsEmbeds } from '../embeds.js';
 import { log } from '../logger.js';
+import { M } from '../messages.js';
 
 export const data = new SlashCommandBuilder()
   .setName('upload')
-  .setDescription('Upload a TDF file to record tournament results')
+  .setDescription(M.commands.upload.description)
   .addAttachmentOption((opt) =>
-    opt.setName('file').setDescription('The .tdf file exported from Tournament Manager').setRequired(true)
+    opt.setName('file').setDescription(M.commands.upload.fileOptionDescription).setRequired(true)
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
@@ -25,7 +26,7 @@ export async function execute(interaction) {
   const attachment = interaction.options.getAttachment('file');
 
   if (!attachment.name.toLowerCase().endsWith('.tdf')) {
-    return interaction.editReply({ content: 'Please upload a `.tdf` file.', ephemeral: true });
+    return interaction.editReply({ content: M.commands.upload.wrongFileType, ephemeral: true });
   }
 
   let buffer;
@@ -34,14 +35,14 @@ export async function execute(interaction) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     buffer = Buffer.from(await response.arrayBuffer());
   } catch (err) {
-    return interaction.editReply({ content: `Failed to download the file: ${err.message}` });
+    return interaction.editReply({ content: M.commands.upload.downloadFailed(err.message) });
   }
 
   let parsed;
   try {
     parsed = parseTDF(buffer);
   } catch (err) {
-    return interaction.editReply({ content: `Could not parse TDF file: ${err.message}` });
+    return interaction.editReply({ content: M.commands.upload.parseFailed(err.message) });
   }
 
   const tournamentId = await insertTournament({
@@ -56,23 +57,23 @@ export async function execute(interaction) {
   const syncResult = await syncAttendanceRoles(interaction.guild);
 
   const confirmEmbed = new EmbedBuilder()
-    .setTitle('Tournament Uploaded')
+    .setTitle(M.commands.upload.embedTitle)
     .setColor(0x3498db)
     .addFields(
-      { name: 'Tournament', value: parsed.name, inline: true },
-      { name: 'Date', value: parsed.date, inline: true },
-      { name: 'Players recorded', value: String(playerCount), inline: true },
+      { name: M.commands.upload.fieldTournament, value: parsed.name, inline: true },
+      { name: M.commands.upload.fieldDate, value: parsed.date, inline: true },
+      { name: M.commands.upload.fieldPlayersRecorded, value: String(playerCount), inline: true },
     );
 
   if (syncResult.added.length > 0) {
     confirmEmbed.addFields({
-      name: `Role granted (${syncResult.added.length})`,
+      name: M.commands.upload.fieldRoleGranted(syncResult.added.length),
       value: syncResult.added.map((id) => `<@${id}>`).join('\n'),
     });
   }
   if (syncResult.removed.length > 0) {
     confirmEmbed.addFields({
-      name: `Role removed (${syncResult.removed.length})`,
+      name: M.commands.upload.fieldRoleRemoved(syncResult.removed.length),
       value: syncResult.removed.map((id) => `<@${id}>`).join('\n'),
     });
   }
