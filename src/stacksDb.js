@@ -127,10 +127,44 @@ export async function createPlayer({ firstName, lastName, playerId, discordId, d
 // --- Reservations ---
 
 /**
- * Atomically check capacity and insert a reservation.
+ * Returns the active reservation row for (event, player), or null.
+ * "Active" means status in unconfirmed/confirmed/waitlist.
+ */
+export async function getActiveReservation(eventId, playerId) {
+  const [rows] = await pool.execute(
+    `SELECT id, status FROM reservations
+     WHERE event_id = ? AND player_id = ?
+       AND status IN ('unconfirmed', 'confirmed', 'waitlist')
+     LIMIT 1`,
+    [eventId, playerId]
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Cancel any active reservation for (event, player). Returns true if a row
+ * was updated. No-op if the player has no active reservation.
+ */
+export async function cancelActiveReservation(eventId, playerId) {
+  const [result] = await pool.execute(
+    `UPDATE reservations
+     SET status = 'cancelled', updated_at = NOW()
+     WHERE event_id = ? AND player_id = ?
+       AND status IN ('unconfirmed', 'confirmed', 'waitlist')`,
+    [eventId, playerId]
+  );
+  return result.affectedRows > 0;
+}
+
+/**
+ * Atomically check capacity and create or reuse a reservation.
+ *
  * Returns { status: 'confirmed' | 'waitlist' | 'duplicate', reservationId: number | null }.
  *
  * - Locks the event row to prevent over-capacity races.
+ * - If a cancelled reservation exists for (event, player), reuses it by flipping
+ *   its status; this implements the "re-register after unregister is just a status
+ *   change" behaviour.
  * - If the player already has an active reservation, returns { status: 'duplicate' }
  *   (caught via the `uniq_active_event_player` constraint).
  */
@@ -158,21 +192,37 @@ export async function createReservationForPlayer(eventId, playerId) {
     const activeCount = Number(countRows[0].active_count);
     const status = activeCount >= maxSpots ? 'waitlist' : 'confirmed';
 
+    // Reuse the most recent cancelled reservation for this (event, player) if one exists.
+    const [cancelledRows] = await conn.execute(
+      `SELECT id FROM reservations
+       WHERE event_id = ? AND player_id = ? AND status = 'cancelled'
+       ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+      [eventId, playerId]
+    );
+
     let reservationId;
-    try {
-      const [insert] = await conn.execute(
-        `INSERT INTO reservations
-           (event_id, player_id, status, paid, created_at, updated_at)
-         VALUES (?, ?, ?, 0, NOW(), NOW())`,
-        [eventId, playerId, status]
+    if (cancelledRows.length > 0) {
+      reservationId = cancelledRows[0].id;
+      await conn.execute(
+        `UPDATE reservations SET status = ?, updated_at = NOW() WHERE id = ?`,
+        [status, reservationId]
       );
-      reservationId = insert.insertId;
-    } catch (err) {
-      if (err.code === 'ER_DUP_ENTRY') {
-        await conn.rollback();
-        return { status: 'duplicate', reservationId: null };
+    } else {
+      try {
+        const [insert] = await conn.execute(
+          `INSERT INTO reservations
+             (event_id, player_id, status, paid, created_at, updated_at)
+           VALUES (?, ?, ?, 0, NOW(), NOW())`,
+          [eventId, playerId, status]
+        );
+        reservationId = insert.insertId;
+      } catch (err) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          await conn.rollback();
+          return { status: 'duplicate', reservationId: null };
+        }
+        throw err;
       }
-      throw err;
     }
 
     await conn.commit();

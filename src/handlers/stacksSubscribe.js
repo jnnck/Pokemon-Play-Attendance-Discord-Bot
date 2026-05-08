@@ -12,6 +12,8 @@ import {
   createPlayer,
   getEventById,
   createReservationForPlayer,
+  getActiveReservation,
+  cancelActiveReservation,
 } from '../stacksDb.js';
 import { log } from '../logger.js';
 
@@ -38,6 +40,30 @@ export async function handleSubscribeButton(interaction) {
     return;
   }
 
+  const existing = await getActiveReservation(eventId, player.id);
+  if (existing) {
+    const phrasing = existing.status === 'waitlist'
+      ? `You're on the waitlist for **${event.name}**.`
+      : `You're registered for **${event.name}**.`;
+    await interaction.reply({
+      content: `${phrasing} Want to unregister?`,
+      ephemeral: true,
+      components: [
+        new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`stacks-sub-unregister:${eventId}`)
+            .setLabel('Unregister')
+            .setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setCustomId('stacks-sub-cancel')
+            .setLabel('Close')
+            .setStyle(ButtonStyle.Secondary),
+        ),
+      ],
+    });
+    return;
+  }
+
   await interaction.reply({
     content: `Reserve a spot for **${event.name}**?`,
     ephemeral: true,
@@ -51,8 +77,8 @@ export async function handleSubscribeButton(interaction) {
           .setCustomId('stacks-sub-cancel')
           .setLabel('Cancel')
           .setStyle(ButtonStyle.Secondary),
-      ),
-    ],
+        ),
+      ],
   });
 }
 
@@ -91,7 +117,40 @@ export async function handleSubscribeConfirm(interaction) {
  * Handle the "Cancel" click in the ephemeral.
  */
 export async function handleSubscribeCancel(interaction) {
-  await interaction.update({ content: 'Cancelled — no reservation made.', components: [] });
+  await interaction.update({ content: 'No changes made.', components: [] });
+}
+
+/**
+ * Handle the "Unregister" click in the already-registered ephemeral.
+ * customId is `stacks-sub-unregister:<eventId>`.
+ */
+export async function handleSubscribeUnregister(interaction) {
+  const eventId = Number(interaction.customId.split(':')[1]);
+  const discordId = interaction.user.id;
+
+  const player = await getPlayerByDiscordId(discordId);
+  if (!player) {
+    await interaction.update({
+      content: 'Your player profile is missing.',
+      components: [],
+    });
+    return;
+  }
+
+  const event = await getEventById(eventId);
+  if (!event) {
+    await interaction.update({ content: 'This event is no longer available.', components: [] });
+    return;
+  }
+
+  const cancelled = await cancelActiveReservation(eventId, player.id);
+  await interaction.update({
+    content: cancelled
+      ? `Your registration for **${event.name}** has been cancelled. Click Register again if your plans change.`
+      : `You don't have an active registration for **${event.name}**.`,
+    components: [],
+  });
+  log.info(`[stacksSubscribe] Unregister for event ${eventId}, player ${player.id} (cancelled=${cancelled})`);
 }
 
 function replyForResult(result, eventName) {

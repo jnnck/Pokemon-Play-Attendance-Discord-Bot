@@ -20,6 +20,7 @@ import {
   handleSubscribeConfirm,
   handleSubscribeCancel,
   handleSubscribeModal,
+  handleSubscribeUnregister,
 } from './handlers/stacksSubscribe.js';
 
 const client = new Client({
@@ -84,6 +85,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       if (interaction.customId.startsWith('stacks-sub-confirm:')) {
         await handleSubscribeConfirm(interaction);
+      } else if (interaction.customId.startsWith('stacks-sub-unregister:')) {
+        await handleSubscribeUnregister(interaction);
       } else if (interaction.customId === 'stacks-sub-cancel') {
         await handleSubscribeCancel(interaction);
       } else if (interaction.customId.startsWith('stacks-sub:')) {
