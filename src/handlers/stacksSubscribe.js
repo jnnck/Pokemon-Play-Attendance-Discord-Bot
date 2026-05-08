@@ -88,12 +88,14 @@ export async function handleSubscribeButton(interaction) {
  * customId is `stacks-sub-confirm:<eventId>`.
  */
 export async function handleSubscribeConfirm(interaction) {
+  await interaction.deferUpdate();
+
   const eventId = Number(interaction.customId.split(':')[1]);
   const discordId = interaction.user.id;
 
   const player = await getPlayerByDiscordId(discordId);
   if (!player) {
-    await interaction.update({
+    await interaction.editReply({
       content: M.subscribe.profileMissingFull,
       components: [],
     });
@@ -102,12 +104,12 @@ export async function handleSubscribeConfirm(interaction) {
 
   const event = await getEventById(eventId);
   if (!event) {
-    await interaction.update({ content: M.subscribe.eventUnavailable, components: [] });
+    await interaction.editReply({ content: M.subscribe.eventUnavailable, components: [] });
     return;
   }
 
   const result = await createReservationForPlayer(eventId, player.id);
-  await interaction.update({
+  await interaction.editReply({
     content: replyForResult(result, event.name),
     components: hasActiveAfter(result) ? [buildUnregisterRow(eventId)] : [],
   });
@@ -126,12 +128,14 @@ export async function handleSubscribeCancel(interaction) {
  * customId is `stacks-sub-unregister:<eventId>`.
  */
 export async function handleSubscribeUnregister(interaction) {
+  await interaction.deferUpdate();
+
   const eventId = Number(interaction.customId.split(':')[1]);
   const discordId = interaction.user.id;
 
   const player = await getPlayerByDiscordId(discordId);
   if (!player) {
-    await interaction.update({
+    await interaction.editReply({
       content: M.subscribe.profileMissingShort,
       components: [],
     });
@@ -140,12 +144,12 @@ export async function handleSubscribeUnregister(interaction) {
 
   const event = await getEventById(eventId);
   if (!event) {
-    await interaction.update({ content: M.subscribe.eventUnavailable, components: [] });
+    await interaction.editReply({ content: M.subscribe.eventUnavailable, components: [] });
     return;
   }
 
   const cancelled = await cancelActiveReservation(eventId, player.id);
-  await interaction.update({
+  await interaction.editReply({
     content: cancelled
       ? M.subscribe.cancelled(event.name)
       : M.subscribe.noActiveReservation(event.name),
@@ -220,6 +224,8 @@ async function showSignupModal(interaction, eventId) {
  * customId is `stacks-sub-modal:<eventId>`.
  */
 export async function handleSubscribeModal(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+
   const eventId = Number(interaction.customId.split(':')[1]);
   const discordId = interaction.user.id;
   const firstName = interaction.fields.getTextInputValue('first_name').trim();
@@ -228,16 +234,15 @@ export async function handleSubscribeModal(interaction) {
 
   const event = await getEventById(eventId);
   if (!event) {
-    await interaction.reply({ content: M.subscribe.eventUnavailable, ephemeral: true });
+    await interaction.editReply({ content: M.subscribe.eventUnavailable });
     return;
   }
 
   // Reject if this player_id is already linked to a different Discord account.
   const existingByPlayerId = await getPlayerByPlayerId(playerId);
   if (existingByPlayerId && existingByPlayerId.discord_id !== discordId) {
-    await interaction.reply({
+    await interaction.editReply({
       content: M.subscribe.playerIdTakenByOther(playerId),
-      ephemeral: true,
     });
     return;
   }
@@ -245,9 +250,8 @@ export async function handleSubscribeModal(interaction) {
   // Reject if this Discord ID somehow already has a player row (race or stale modal).
   const existingByDiscord = await getPlayerByDiscordId(discordId);
   if (existingByDiscord) {
-    await interaction.reply({
+    await interaction.editReply({
       content: M.subscribe.accountAlreadyLinked,
-      ephemeral: true,
     });
     return;
   }
@@ -261,9 +265,8 @@ export async function handleSubscribeModal(interaction) {
   });
 
   const result = await createReservationForPlayer(eventId, newPlayerId);
-  await interaction.reply({
+  await interaction.editReply({
     content: replyForResult(result, event.name),
-    ephemeral: true,
     components: hasActiveAfter(result) ? [buildUnregisterRow(eventId)] : [],
   });
   log.info(`[stacksSubscribe] First-time signup: created player ${newPlayerId}, reservation ${result.status}`);
