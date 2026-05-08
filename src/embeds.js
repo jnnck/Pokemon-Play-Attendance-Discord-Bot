@@ -84,11 +84,11 @@ export function buildSubscribeEmbed(event, availableSpots) {
   return embed;
 }
 
-export function buildSubscribeRow(eventId) {
+export function buildSubscribeRow(eventId, isFull = false) {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`stacks-sub:${eventId}`)
-      .setLabel(M.buttons.register)
+      .setLabel(isFull ? M.buttons.registerWaitlist : M.buttons.register)
       .setStyle(ButtonStyle.Primary)
   );
 }

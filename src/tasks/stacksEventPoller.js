@@ -43,7 +43,7 @@ async function postNewEvents(channel) {
         const available = Math.max(0, event.max_spots - (await getActiveReservationCount(event.id)));
         const message = await channel.send({
           embeds: [buildSubscribeEmbed(event, available)],
-          components: [buildSubscribeRow(event.id)],
+          components: [buildSubscribeRow(event.id, available === 0)],
         });
         await markEventPostedToDiscord(event.id);
         await upsertStacksEventMessage(event.id, channel.id, message.id);

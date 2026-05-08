@@ -8,6 +8,7 @@ export const M = {
 
   buttons: {
     register: 'Inschrijven',
+    registerWaitlist: 'Plaats mij op de wachtlijst',
     confirm: 'Bevestigen',
     waitlist: 'Op wachtlijst',
     cancel: 'Annuleren',
