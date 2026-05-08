@@ -20,7 +20,7 @@ import { log } from '../logger.js';
  * customId is `stacks-sub:<eventId>`.
  *
  * Existing player → ephemeral Confirm/Cancel.
- * New player → placeholder message (modal flow added in Task 5).
+ * New player → opens first-time signup modal.
  */
 export async function handleSubscribeButton(interaction) {
   const eventId = Number(interaction.customId.split(':')[1]);
