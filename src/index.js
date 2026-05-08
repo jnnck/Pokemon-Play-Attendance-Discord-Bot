@@ -5,6 +5,7 @@ import { initDatabase } from './database.js';
 import { initStacksDb } from './stacksDb.js';
 import { pollEvents } from './tasks/eventFetcher.js';
 import { pollStacksEvents } from './tasks/stacksEventPoller.js';
+import { pollReservationNotifications } from './tasks/reservationNotifier.js';
 
 import * as uploadCommand from './commands/upload.js';
 import * as registerCommand from './commands/register.js';
@@ -50,6 +51,12 @@ client.once(Events.ClientReady, (c) => {
     pollStacksEvents(client);
     setInterval(() => pollStacksEvents(client), EVENT_POLL_INTERVAL);
     log.info('Stacks event subscription polling started (every 60s)');
+  }
+
+  if (process.env.STACKS_RESERVATIONS_CHANNEL_ID) {
+    pollReservationNotifications(client);
+    setInterval(() => pollReservationNotifications(client), EVENT_POLL_INTERVAL);
+    log.info('Reservation notifier polling started (every 60s)');
   }
 });
 

@@ -65,6 +65,14 @@ export async function initDatabase() {
       message_id VARCHAR(64) NOT NULL
     )
   `);
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS reservation_notifications (
+      reservation_id   INT PRIMARY KEY,
+      last_status      VARCHAR(32) NOT NULL,
+      last_notified_at BIGINT NOT NULL
+    )
+  `);
 }
 
 // --- Tournaments ---
@@ -327,4 +335,31 @@ export async function getStacksEventMessages() {
 
 export async function deleteStacksEventMessage(eventId) {
   await pool.execute('DELETE FROM stacks_event_messages WHERE event_id = ?', [eventId]);
+}
+
+// --- Reservation notifications ---
+
+export async function getReservationNotificationsMap() {
+  const [rows] = await pool.execute(
+    'SELECT reservation_id, last_status FROM reservation_notifications'
+  );
+  const map = new Map();
+  for (const r of rows) map.set(r.reservation_id, r.last_status);
+  return map;
+}
+
+export async function upsertReservationNotification(reservationId, status) {
+  await pool.execute(
+    `INSERT INTO reservation_notifications (reservation_id, last_status, last_notified_at)
+     VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE last_status = VALUES(last_status), last_notified_at = VALUES(last_notified_at)`,
+    [reservationId, status, Date.now()]
+  );
+}
+
+export async function getReservationNotificationCount() {
+  const [rows] = await pool.execute(
+    'SELECT COUNT(*) AS count FROM reservation_notifications'
+  );
+  return Number(rows[0].count);
 }

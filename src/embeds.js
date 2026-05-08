@@ -91,3 +91,59 @@ export function buildSubscribeRow(eventId) {
       .setStyle(ButtonStyle.Primary)
   );
 }
+
+const STATUS_COLORS = {
+  confirmed:   0x2ecc71,
+  waitlist:    0xf39c12,
+  cancelled:   0xe74c3c,
+  unconfirmed: 0x95a5a6,
+};
+
+const SOURCE_LABELS = {
+  discord: 'Discord',
+  form:    'Web form',
+  manual:  'Manual (admin)',
+};
+
+function statusColor(status) {
+  return STATUS_COLORS[status] ?? 0x95a5a6;
+}
+
+function statusLabel(status) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function reservationFooter(reservation) {
+  return `Reservation #${reservation.id}`;
+}
+
+function reservationPlayerLine(reservation) {
+  const id = reservation.player_external_id ? ` (${reservation.player_external_id})` : '';
+  return `${reservation.first_name} ${reservation.last_name ?? ''}${id}`.trim();
+}
+
+export function buildNewReservationEmbed(reservation) {
+  return new EmbedBuilder()
+    .setTitle(`New reservation — ${reservation.event_name}`)
+    .setColor(statusColor(reservation.status))
+    .addFields(
+      { name: 'Player', value: reservationPlayerLine(reservation), inline: false },
+      { name: 'Status', value: statusLabel(reservation.status), inline: true },
+      { name: 'Source', value: SOURCE_LABELS[reservation.source] ?? reservation.source, inline: true },
+    )
+    .setFooter({ text: reservationFooter(reservation) })
+    .setTimestamp();
+}
+
+export function buildStatusChangeEmbed(reservation, oldStatus) {
+  return new EmbedBuilder()
+    .setTitle(`Reservation updated — ${reservation.event_name}`)
+    .setColor(statusColor(reservation.status))
+    .addFields(
+      { name: 'Player', value: reservationPlayerLine(reservation), inline: false },
+      { name: 'Status', value: `${statusLabel(oldStatus)} → ${statusLabel(reservation.status)}`, inline: true },
+      { name: 'Source', value: SOURCE_LABELS[reservation.source] ?? reservation.source, inline: true },
+    )
+    .setFooter({ text: reservationFooter(reservation) })
+    .setTimestamp();
+}

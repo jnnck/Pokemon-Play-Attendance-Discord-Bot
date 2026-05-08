@@ -157,6 +157,25 @@ export async function cancelActiveReservation(eventId, playerId) {
 }
 
 /**
+ * Fetch all reservations on upcoming, non-deleted events, joined with event
+ * and player info — what the notifier needs to build a Discord embed.
+ */
+export async function getReservationsForUpcomingEvents() {
+  const [rows] = await pool.execute(
+    `SELECT
+       r.id, r.event_id, r.player_id, r.status, r.source,
+       e.name AS event_name, e.date_time AS event_date_time,
+       p.first_name, p.last_name, p.player_id AS player_external_id
+     FROM reservations r
+     JOIN events e   ON r.event_id  = e.id AND e.deleted_at IS NULL
+     JOIN players p  ON r.player_id = p.id AND p.deleted_at IS NULL
+     WHERE e.date_time > NOW()
+     ORDER BY r.id ASC`
+  );
+  return rows;
+}
+
+/**
  * Atomically check capacity and create or reuse a reservation.
  *
  * Returns { status: 'confirmed' | 'waitlist' | 'duplicate', reservationId: number | null }.
