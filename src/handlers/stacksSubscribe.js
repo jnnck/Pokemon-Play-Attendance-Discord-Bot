@@ -14,6 +14,7 @@ import {
   createReservationForPlayer,
   getActiveReservation,
   cancelActiveReservation,
+  getActiveReservationCount,
 } from '../stacksDb.js';
 import { log } from '../logger.js';
 import { M } from '../messages.js';
@@ -65,21 +66,26 @@ export async function handleSubscribeButton(interaction) {
     return;
   }
 
+  const activeCount = await getActiveReservationCount(eventId);
+  const willWaitlist = activeCount >= event.max_spots;
+
   await interaction.reply({
-    content: M.subscribe.confirmPrompt(event.name),
+    content: willWaitlist
+      ? M.subscribe.waitlistPrompt(event.name)
+      : M.subscribe.confirmPrompt(event.name),
     ephemeral: true,
     components: [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId(`stacks-sub-confirm:${eventId}`)
-          .setLabel(M.buttons.confirm)
+          .setLabel(willWaitlist ? M.buttons.waitlist : M.buttons.confirm)
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId('stacks-sub-cancel')
           .setLabel(M.buttons.cancel)
           .setStyle(ButtonStyle.Secondary),
-        ),
-      ],
+      ),
+    ],
   });
 }
 

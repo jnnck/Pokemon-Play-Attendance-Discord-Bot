@@ -9,6 +9,7 @@ export const M = {
   buttons: {
     register: 'Inschrijven',
     confirm: 'Bevestigen',
+    waitlist: 'Op wachtlijst',
     cancel: 'Annuleren',
     unregister: 'Uitschrijven',
     close: 'Sluiten',
@@ -18,13 +19,14 @@ export const M = {
     title: 'Eerste inschrijving',
     firstName: 'Voornaam',
     lastName: 'Achternaam',
-    playerId: 'Pokémon spelers-ID',
+    playerId: 'Pokémon Player ID',
   },
 
   // Subscribe / unsubscribe handler replies (src/handlers/stacksSubscribe.js)
   subscribe: {
     eventUnavailable: 'Dit evenement is niet meer beschikbaar.',
     confirmPrompt: (eventName) => `Wil je een plek reserveren voor **${eventName}**?`,
+    waitlistPrompt: (eventName) => `**${eventName}** is momenteel vol. Wil je op de wachtlijst?`,
     alreadyOnWaitlist: (eventName) => `Je staat op de wachtlijst voor **${eventName}**.`,
     alreadyRegistered: (eventName) => `Je bent ingeschreven voor **${eventName}**.`,
     unregisterPrompt: (statusSentence) => `${statusSentence} Wil je je uitschrijven?`,
@@ -37,7 +39,7 @@ export const M = {
     cancelled: (eventName) => `Je inschrijving voor **${eventName}** is geannuleerd. Klik opnieuw op Inschrijven als je plannen veranderen.`,
     noActiveReservation: (eventName) => `Je hebt geen actieve inschrijving voor **${eventName}**.`,
     noChanges: 'Geen wijzigingen.',
-    playerIdTakenByOther: (playerId) => `Spelers-ID **${playerId}** is gekoppeld aan een ander Discord-account. Neem contact op met een beheerder als dit niet klopt.`,
+    playerIdTakenByOther: (playerId) => `Player ID **${playerId}** is gekoppeld aan een ander Discord-account. Neem contact op met een beheerder als dit niet klopt.`,
     accountAlreadyLinked: 'Je account is al gekoppeld. Klik opnieuw op Inschrijven.',
   },
 
@@ -92,8 +94,8 @@ export const M = {
     attendance: {
       description: 'Bekijk de aanwezigheidsgeschiedenis van jezelf of een andere speler',
       userOptionDescription: 'Discord-gebruiker om te bekijken (laat leeg voor jezelf)',
-      notRegisteredSelf: 'Je hebt je spelers-ID nog niet gekoppeld. Gebruik `/register` om je account te koppelen.',
-      notRegisteredOther: (userId) => `<@${userId}> heeft zijn spelers-ID nog niet gekoppeld.`,
+      notRegisteredSelf: 'Je hebt je Player ID nog niet gekoppeld. Gebruik `/register` om je account te koppelen.',
+      notRegisteredOther: (userId) => `<@${userId}> heeft zijn Player ID nog niet gekoppeld.`,
       roleStatusLine: (statusEmoji, count, totalMonths, qualifies) => {
         const monthsWord = totalMonths === 1 ? 'maand' : 'maanden';
         const tail = qualifies
@@ -103,7 +105,7 @@ export const M = {
       },
       noHistory: 'Geen toernooi-aanwezigheid geregistreerd.',
       embedTitle: (username) => `Aanwezigheid: ${username}`,
-      fieldPlayerId: 'Spelers-ID',
+      fieldPlayerId: 'Player ID',
       fieldTotalEvents: 'Totaal aantal evenementen',
       fieldRoleStatus: 'Status aanwezigheidsrol',
       fieldRecentHistory: 'Recente geschiedenis (laatste 10)',
@@ -126,10 +128,10 @@ export const M = {
       noData: 'Nog geen toernooidata. Upload eerst een TDF-bestand.',
     },
     register: {
-      description: 'Koppel je Discord-account aan je Pokémon TCG spelers-ID',
-      playerIdOptionDescription: 'Je spelers-ID zoals die in TDF-toernooibestanden staat',
+      description: 'Koppel je Discord-account aan je Pokémon TCG Player ID',
+      playerIdOptionDescription: 'Je Player ID zoals die in TDF-toernooibestanden staat',
       playerIdTaken: (playerId) =>
-        `Spelers-ID **${playerId}** is al gekoppeld aan een ander Discord-account.`,
+        `Player ID **${playerId}** is al gekoppeld aan een ander Discord-account.`,
       noTournaments: 'Er zijn nog geen toernooien geüpload.',
       statusLine: (count, totalMonths, qualifies, REQUIRED, WINDOW) => {
         const monthsWord = totalMonths === 1 ? 'maand' : 'maanden';
@@ -141,8 +143,8 @@ export const M = {
       updated: (oldId, newId) =>
         `Je registratie is bijgewerkt van **${oldId}** naar **${newId}**.`,
       registered: (playerId) =>
-        `Spelers-ID **${playerId}** gekoppeld aan je account.`,
-      hint: 'Je spelers-ID vind je in officiële toernooi-exports.',
+        `Player ID **${playerId}** gekoppeld aan je account.`,
+      hint: 'Je Player ID vind je in officiële toernooi-exports.',
     },
     tournamentDelete: {
       description: 'Verwijder een geregistreerd toernooi en de bijbehorende aanwezigheidsdata',
