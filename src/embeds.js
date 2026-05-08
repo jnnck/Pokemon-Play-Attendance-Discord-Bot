@@ -87,7 +87,7 @@ export function buildSubscribeRow(eventId) {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`stacks-sub:${eventId}`)
-      .setLabel('Subscribe')
+      .setLabel('Register')
       .setStyle(ButtonStyle.Primary)
   );
 }
