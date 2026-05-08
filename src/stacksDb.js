@@ -164,7 +164,10 @@ export async function getReservationsForUpcomingEvents() {
   const [rows] = await pool.execute(
     `SELECT
        r.id, r.event_id, r.player_id, r.status, r.source,
-       e.name AS event_name, e.date_time AS event_date_time,
+       e.name AS event_name, e.date_time AS event_date_time, e.max_spots AS event_max_spots,
+       (SELECT COUNT(*) FROM reservations r2
+        WHERE r2.event_id = r.event_id
+          AND r2.status IN ('unconfirmed', 'confirmed')) AS event_active_count,
        p.first_name, p.last_name, p.player_id AS player_external_id
      FROM reservations r
      JOIN events e   ON r.event_id  = e.id AND e.deleted_at IS NULL

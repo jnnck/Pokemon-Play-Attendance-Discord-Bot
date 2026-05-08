@@ -121,6 +121,7 @@ export function buildNewReservationEmbed(reservation) {
       { name: M.reservationEmbed.fieldPlayer, value: reservationPlayerLine(reservation), inline: false },
       { name: M.reservationEmbed.fieldStatus, value: statusLabel(reservation.status), inline: true },
       { name: M.reservationEmbed.fieldSource, value: sourceLabel(reservation.source), inline: true },
+      { name: M.subscribeEmbed.fieldSpots, value: spotsValue(reservation), inline: true },
     )
     .setFooter({ text: reservationFooter(reservation) })
     .setTimestamp();
@@ -134,7 +135,15 @@ export function buildStatusChangeEmbed(reservation, oldStatus) {
       { name: M.reservationEmbed.fieldPlayer, value: reservationPlayerLine(reservation), inline: false },
       { name: M.reservationEmbed.fieldStatus, value: M.reservationEmbed.statusTransition(statusLabel(oldStatus), statusLabel(reservation.status)), inline: true },
       { name: M.reservationEmbed.fieldSource, value: sourceLabel(reservation.source), inline: true },
+      { name: M.subscribeEmbed.fieldSpots, value: spotsValue(reservation), inline: true },
     )
     .setFooter({ text: reservationFooter(reservation) })
     .setTimestamp();
+}
+
+function spotsValue(reservation) {
+  const max = Number(reservation.event_max_spots);
+  const active = Number(reservation.event_active_count);
+  const available = Math.max(0, max - active);
+  return M.subscribeEmbed.spotsValue(available, max);
 }
