@@ -38,11 +38,32 @@ This is a Node.js ESM (`"type": "module"`) Discord bot using discord.js v14 and 
 
 **Privacy:** Full names are stored in the DB as `first_name` + `last_name`. Public display always uses `formatName()` from `src/embeds.js` which shortens to "Firstname L.".
 
+## Event subscription / `stacks_event_manager` integration
+
+The bot also integrates with a second MariaDB schema, `stacks_event_manager`, owned by a Laravel app at `/Users/jnnck/Sites/inschrijvings-app`. The bot is a **consumer**: it never runs migrations, never creates tables, never alters columns there. It reads from `events`/`players`/`reservations` and writes:
+- `events.posted_to_discord = 1` (after a successful post)
+- `players` inserts (first-time signups via Discord modal)
+- `reservations` inserts/updates (via `createReservationForPlayer`, `cancelActiveReservation`)
+
+**Modules:**
+- `src/stacksDb.js` — second `mysql2` pool to `stacks_event_manager` (same host/port/user/password as the bot's own DB, different `database` name). All cross-DB queries live here. `initStacksDb()` no-ops cleanly if `STACKS_DB_NAME` is unset.
+- `src/tasks/stacksEventPoller.js` — every 60s (same `EVENT_POLL_INTERVAL` as the pokedata poller): posts new open events to `STACKS_SUBSCRIBE_CHANNEL_ID` with a Register button, and refreshes the spot count on every previously-posted event still open and upcoming.
+- `src/handlers/stacksSubscribe.js` — handles the four `stacks-sub*` button customIds (`stacks-sub:`, `stacks-sub-confirm:`, `stacks-sub-cancel`, `stacks-sub-unregister:`) and the `stacks-sub-modal:` modal submission. The dispatcher in `src/index.js` routes by customId prefix.
+- Bot-local table `stacks_event_messages` (created in `src/database.js`) maps `event_id → channel_id, message_id` so the poller can edit posted embeds. Discord error 10008 (Unknown Message) drops the row so deleted posts stop being retried.
+
+**Reservation semantics owned by the bot:**
+- New rows are tagged `source = 'discord'` (the column also accepts `'form'`/`'manual'` from the Laravel app).
+- Re-registering after Unregister **reuses** the cancelled row by flipping its status back to `confirmed`/`waitlist` rather than inserting a new row. The cancelled-row reuse + capacity check happen in a single `FOR UPDATE` transaction in `createReservationForPlayer`.
+- Capacity-counting status values are `unconfirmed`/`confirmed`; `waitlist` does not count toward capacity. The Laravel app's `ReservationStatus::countsTowardCapacity()` is the canonical definition.
+- The schema's virtual unique constraint `uniq_active_event_player` prevents two non-cancelled reservations per `(event_id, player_id)`. The bot catches `ER_DUP_ENTRY` and returns `{ status: 'duplicate' }`.
+
 ## Environment variables
 
 See `.env.example`. `ATTENDANCE_ROLE_ID` and `RESULTS_CHANNEL_ID` are optional — the bot skips role sync or results posting if they are absent. The bot's Discord role must be ranked above the attendance role in the server hierarchy.
 
 Database connection is configured via `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` (see `.env.example`).
+
+`STACKS_DB_NAME` and `STACKS_SUBSCRIBE_CHANNEL_ID` enable the event subscription feature. Both are optional; with either unset the feature is disabled and the bot otherwise runs normally. The DB user must have read/write access to `stacks_event_manager` in addition to the bot's own DB.
 
 ## Docker
 
